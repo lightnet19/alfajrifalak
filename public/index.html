@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Al-Fajri — Hisab Astronomi Islam</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Noto+Naskh+Arabic:wght@400;600&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<div class="star-bg" id="starBg"></div>
+<div class="wrap">
+
+<header>
+  <div class="logo-ring"><span class="logo-moon">&#9789;</span></div>
+  <h1>AL-FAJRI</h1>
+  <div class="hd-sub">Hisab Astronomi Islam</div>
+  <div class="hd-org">&#1575;&#1604;&#1601;&#1580;&#1585;&#1610; &#8212; Lembaga Falakiyah PCNU Kencong</div>
+  <div class="gold-rule"></div>
+</header>
+
+<div class="loc-bar">
+  <label>&#128205; Markaz</label>
+  <div class="loc-fields">
+    <input class="lf lg" type="text"   id="inpMarkaz" placeholder="Nama Markaz" value="Pondok Pesantren Nuris">
+    <input class="lf"    type="number" id="inpLat"    placeholder="Lintang" step="0.0001" value="-8.2664">
+    <input class="lf"    type="number" id="inpLng"    placeholder="Bujur"   step="0.0001" value="113.4203">
+    <input class="lf"    type="number" id="inpElev"   placeholder="Elevasi (m)" value="11">
+    <input class="lf"    type="number" id="inpTZ"     placeholder="UTC+" value="7" step="0.5">
+  </div>
+  <button class="btn-g" id="btnGPS">GPS</button>
+  <button class="btn-g" id="btnCalc">Hitung</button>
+</div>
+<div id="locSt"></div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="sholat">Sholat</button>
+  <button class="tab" data-tab="hilal">Hilal</button>
+  <button class="tab" data-tab="hijri">Kalender</button>
+  <button class="tab" data-tab="moon">Bulan</button>
+  <button class="tab" data-tab="qibla">Kiblat</button>
+  <button class="tab" data-tab="konversi">Konversi</button>
+  <button class="tab" data-tab="imsakiyah">Imsakiyah</button>
+  <button class="tab" data-tab="ephemeris">Ephemeris</button>
+</div>
+
+<div class="panel active" id="panel-sholat">
+  <div class="card"><div class="countdown"><div class="cd-lbl">Menuju Waktu Sholat Berikutnya</div><div class="cd-time" id="cdVal">--:--:--</div><div class="cd-next" id="cdNext">--</div></div></div>
+  <div class="card">
+    <div class="card-hd">Jadwal Sholat Hari Ini</div>
+    <div class="act-row">
+      <button class="act-btn" id="btnCS" onclick="copySholat(this)">Salin</button>
+      <button class="act-btn" onclick="exportSholatPDF()">PDF</button>
+    </div>
+    <div class="pg" id="prayerGrid"></div>
+  </div>
+  <div class="card"><div class="card-hd">Data Matahari</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px" id="sunData"></div></div>
+</div>
+
+<div class="panel" id="panel-hilal">
+  <div class="card">
+    <div class="card-hd">Hisab Awal Bulan Hijriyah</div>
+    <div class="hform">
+      <div class="hfg"><label>Bulan Hijriyah</label>
+        <select id="hilalMonth">
+          <option value="1">1 Muharram</option><option value="2">2 Shafar</option>
+          <option value="3">3 Rabi'ul Awal</option><option value="4">4 Rabi'ul Akhir</option>
+          <option value="5">5 Jumadal Ula</option><option value="6">6 Jumadal Akhirah</option>
+          <option value="7">7 Rajab</option><option value="8">8 Sya'ban</option>
+          <option value="9">9 Ramadan</option><option value="10" selected>10 Syawal</option>
+          <option value="11">11 Dzulqa'dah</option><option value="12">12 Dzulhijjah</option>
+        </select>
+      </div>
+      <div class="hfg"><label>Tahun Hijriyah</label><input type="number" id="hilalYear" value="1447" min="1300" max="1700"></div>
+      <div class="hfg"><label>Metode</label>
+        <select id="hilalCrit"><option value="irnu" selected>IRNU/NU (LF-PBNU 2022)</option><option value="odeh">Odeh 2006</option><option value="yallop">Yallop 1997</option></select>
+      </div>
+      <div class="hfg" style="flex-direction:row;align-items:flex-end"><button class="btn-g" onclick="doCalcHilal()">Hitung Hilal</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="act-row">
+      <button class="act-btn" id="btnCH" onclick="copyHilal(this)">Salin Teks</button>
+      <button class="act-btn" onclick="exportHilalPDF()">Export PDF</button>
+      <button class="act-btn" onclick="printHilal()">Cetak</button>
+    </div>
+    <div id="hilalOut" class="hrep" style="color:var(--text3)">Klik Hitung Hilal untuk memulai kalkulasi.</div>
+  </div>
+  <div id="hilalCritDiv" style="display:none">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:.95rem;color:var(--gold);margin-bottom:9px">Analisis Kriteria Visibilitas</div>
+    <div class="cgrid" id="hilalCritCards"></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-hijri">
+  <div class="card"><div class="card-hd">Tanggal Hijriyah Hari Ini</div><div class="hc" id="hijriDisp"></div></div>
+  <div class="card"><div class="card-hd">Kalender Bulan Ini</div><div id="hijriCal"></div></div>
+</div>
+
+<div class="panel" id="panel-moon">
+  <div class="card">
+    <div class="card-hd">Fase Bulan Hari Ini</div>
+    <div class="mwrap">
+      <canvas id="moonCanvas" width="148" height="148" style="border-radius:50%;flex-shrink:0"></canvas>
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--gold2)" id="moonPN">--</div>
+        <div style="font-size:.77rem;color:var(--text2);margin-top:5px" id="moonIl">Iluminasi: --</div>
+        <div style="font-size:.77rem;color:var(--text2);margin-top:3px" id="moonAg">Umur Bulan: --</div>
+        <div style="margin-top:11px"><div style="font-size:.61rem;letter-spacing:.11em;text-transform:uppercase;color:var(--text3);margin-bottom:5px">Siklus Fase</div><div class="ph-bar" style="width:155px"><div class="ph-fill" id="moonBF" style="width:0%"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card"><div class="card-hd">Fase Mendatang</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:8px" id="moonFut"></div></div>
+</div>
+
+<div class="panel" id="panel-qibla">
+  <div class="card">
+    <div class="card-hd">Arah Kiblat</div>
+    <div class="qwrap">
+      <div class="compass"><span class="cpd n">U</span><span class="cpd s">S</span><span class="cpd e">T</span><span class="cpd w">B</span><div class="cpneedle" id="cpN"></div><div class="cpcen"></div></div>
+      <div>
+        <div class="qdr"><div class="qdl">Azimuth Kiblat</div><div class="qdv" id="qAz">--<span> dari Utara</span></div></div>
+        <div class="qdr"><div class="qdl">Arah Kompas</div><div class="qdv" id="qDir">--</div></div>
+        <div class="qdr"><div class="qdl">Jarak ke Makkah</div><div class="qdv" id="qDist">--<span> km</span></div></div>
+        <div class="qdr"><div class="qdl">Koordinat Ka'bah</div><div style="font-size:.8rem;color:var(--text2)">21.4225 LU, 39.8262 BT</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-konversi">
+  <div class="two-col">
+    <div class="conv-box"><label>Masehi ke Hijriyah</label><input type="date" id="convM"><div class="conv-res" id="convHR">--</div><div class="conv-ar" id="convHAr"></div></div>
+    <div class="conv-box"><label>Hijriyah ke Masehi</label>
+      <input type="number" id="convHD" placeholder="Hari">
+      <select id="convHMo"><option value="">Pilih Bulan</option><option value="1">Muharram</option><option value="2">Shafar</option><option value="3">Rabi'ul Awal</option><option value="4">Rabi'ul Akhir</option><option value="5">Jumadal Ula</option><option value="6">Jumadal Akhirah</option><option value="7">Rajab</option><option value="8">Sya'ban</option><option value="9">Ramadan</option><option value="10">Syawal</option><option value="11">Dzulqa'dah</option><option value="12">Dzulhijjah</option></select>
+      <input type="number" id="convHY" placeholder="Tahun H">
+      <div class="conv-res" id="convMR">--</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:4px"><div class="card-hd">Julian Day</div>
+    <div class="two-col">
+      <div class="conv-box" style="background:transparent;border:none;padding:0"><label>JD ke Tanggal</label><input type="number" id="convJD" placeholder="2451545.0" step="0.001"><div class="conv-res" id="convJDR">--</div></div>
+      <div class="conv-box" style="background:transparent;border:none;padding:0"><label>JD Hari Ini</label><div class="conv-res" id="todayJD">--</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-imsakiyah">
+  <div class="card">
+    <div style="text-align:center;margin-bottom:13px">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--gold2)" id="imsakTtl">--</div>
+      <div style="font-size:.72rem;color:var(--text3);margin-top:3px" id="imsakSub"></div>
+    </div>
+    <div class="act-row">
+      <button class="act-btn" id="btnCI" onclick="copyImsak(this)">Salin</button>
+      <button class="act-btn" onclick="exportImsakPDF()">PDF</button>
+    </div>
+    <div style="overflow-x:auto"><table class="dtbl" id="imsakTable"></table></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-ephemeris">
+  <div class="card">
+    <div class="card-hd">Ephemeris Matahari &amp; Bulan</div>
+    <div class="act-row">
+      <button class="act-btn" id="btnCE" onclick="copyEph(this)">Salin</button>
+      <button class="act-btn" onclick="exportEphPDF()">PDF</button>
+    </div>
+    <div style="overflow-x:auto"><table class="dtbl" id="ephTable"></table></div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="ft-n">AL-FAJRI</div>
+  <div class="ft-o">Lembaga Falakiyah PCNU Kencong</div>
+  <div class="ft-a">&#1604;&#1580;&#1606;&#1577; &#1575;&#1604;&#1601;&#1604;&#1603;&#1610;&#1577; &mdash; PCNU &#1603;&#1606;&#1580;&#1608;&#1606;&#1580;</div>
+  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v2.1</div>
+</footer>
+</div>
+
+<script src="js/math.js"></script>
+<script src="js/astro.js"></script>
+<script src="js/prayer.js"></script>
+<script src="js/hilal.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/copypdf.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
