@@ -104,7 +104,6 @@ window.exportPDF = () => {
     doc.text(t, 15, y);
     y += 6;
 
-    // auto page break
     if (y > 280) {
       doc.addPage();
       y = 20;
@@ -118,7 +117,7 @@ window.exportPDF = () => {
   };
 
   // =========================
-  // HEADER RESMI
+  // HEADER
   // =========================
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
@@ -134,11 +133,11 @@ window.exportPDF = () => {
   // =========================
   title("A. Identitas Markaz");
 
-  add("Markaz        : PCNU Kencong");
-  add("Lintang       : -8.28");
-  add("Bujur         : 113.38");
-  add("Elevasi       : 15 mdpl");
-  add("Zona Waktu    : UTC+7");
+  add(`Markaz        : ${last.markaz || "Tanpa Nama"}`);
+  add(`Lintang       : ${last.lat || "-"}`);
+  add(`Bujur         : ${last.lon || "-"}`);
+  add(`Elevasi       : ${last.elevation || 0} mdpl`);
+  add(`Zona Waktu    : UTC+${last.tz || 7}`);
 
   // =========================
   // IJTIMA
@@ -185,6 +184,7 @@ window.exportPDF = () => {
 
   add(`Moon Lag  : ${last.moonLag.toFixed(2)} menit`);
   add(`Best Time : ${last.bestTime.toFixed(2)}`);
+  add(`Umur Hilal: ${last.moonAge.toFixed(2)} jam`);
 
   // =========================
   // VISIBILITAS
@@ -228,177 +228,3 @@ window.exportPDF = () => {
 
   doc.save("laporan-rukyat-alfajri.pdf");
 };
-// ========================
-// MARKAZ SYSTEM (ADD-ON)
-// ========================
-
-// LOAD MARKAZ LIST
-function loadMarkazList() {
-  const list = getMarkazList();
-  const select = document.getElementById("markazList");
-  if (!select) return;
-
-  select.innerHTML = "";
-
-  list.forEach((m, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.text = `${m.name} (${m.lat}, ${m.lon})`;
-    select.appendChild(opt);
-  });
-}
-
-// PILIH MARKAZ
-const markazSelect = document.getElementById("markazList");
-if (markazSelect) {
-  markazSelect.addEventListener("change", function () {
-    const m = getMarkaz(this.value);
-    if (!m) return;
-
-    document.getElementById("markaz").value = m.name;
-    document.getElementById("lat").value = m.lat;
-    document.getElementById("lon").value = m.lon;
-    document.getElementById("elevation").value = m.elevation;
-    document.getElementById("tz").value = m.tz;
-  });
-}
-
-// GPS
-window.getGPS = function () {
-  if (!navigator.geolocation) {
-    alert("GPS tidak didukung");
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      document.getElementById("lat").value =
-        pos.coords.latitude.toFixed(6);
-
-      document.getElementById("lon").value =
-        pos.coords.longitude.toFixed(6);
-
-      document.getElementById("elevation").value =
-        Math.round(pos.coords.altitude || 0);
-
-      alert("GPS berhasil diambil");
-    },
-    () => alert("Gagal ambil GPS")
-  );
-};
-
-// SIMPAN MARKAZ
-window.saveMarkaz = function () {
-  const m = {
-    name: document.getElementById("markaz")?.value,
-    lat: document.getElementById("lat")?.value,
-    lon: document.getElementById("lon")?.value,
-    elevation: document.getElementById("elevation")?.value,
-    tz: document.getElementById("tz")?.value,
-  };
-
-  if (!m.name || !m.lat || !m.lon) {
-    alert("Isi data markaz dulu!");
-    return;
-  }
-
-  addMarkaz(m);
-  loadMarkazList();
-
-  alert("Markaz disimpan");
-};
-
-// HAPUS MARKAZ
-window.deleteMarkaz = function () {
-  const index = document.getElementById("markazList")?.value;
-
-  if (index === "" || index === null) {
-    alert("Pilih markaz dulu!");
-    return;
-  }
-
-  removeMarkaz(index);
-  loadMarkazList();
-
-  alert("Markaz dihapus");
-};
-
-// ========================
-// OVERRIDE RUN (AMBIL INPUT)
-// ========================
-
-// SIMPAN RUN LAMA
-const oldRun = window.run;
-
-// GANTI RUN
-window.run = () => {
-  const latInput = document.getElementById("lat");
-  const lonInput = document.getElementById("lon");
-  const tzInput  = document.getElementById("tz");
-
-  // kalau input kosong → pakai default lama
-  if (!latInput || !lonInput) {
-    oldRun();
-    return;
-  }
-
-  const lat = parseFloat(latInput.value);
-  const lon = parseFloat(lonInput.value);
-  const tz  = parseFloat(tzInput?.value || 7);
-
-  if (isNaN(lat) || isNaN(lon)) {
-    alert("Latitude / Longitude belum diisi!");
-    return;
-  }
-
-  const date = new Date();
-
-  last = calculateHilal(date, lat, lon, tz);
-
-  // pakai output lama (tidak diubah)
-  document.getElementById("out").textContent = `
-🌙 HASIL RUKYAT (OBSERVATORIUM)
-
-JD                : ${last.JD}
-DeltaT            : ${last.deltaT} s
-Sunset            : ${last.sunset}
-
--------------------------------
-🌞 MATAHARI
--------------------------------
-Altitude Sun      : ${last.sunAltitude?.toFixed(2)}°
-Azimuth Sun       : ${last.sunAzimuth?.toFixed(2)}°
-
--------------------------------
-🌙 HILAL
--------------------------------
-Altitude (Geo)      : ${last.moonAltitude?.toFixed(2)}°
-Altitude (Apparent) : ${last.apparentAltitude?.toFixed(2)}°
-Altitude (Observed) : ${last.observedAltitude?.toFixed(2)}°
-
-Azimuth Hilal       : ${last.moonAzimuth?.toFixed(2)}°
-Elongasi            : ${last.elongation?.toFixed(2)}°
-
-Refraction          : ${last.refraction?.toFixed(3)}°
-Parallax            : ${last.parallaxAlt?.toFixed(2)}°
-
--------------------------------
-⏳ PARAMETER RUKYAT
--------------------------------
-Moon Lag            : ${last.moonLag?.toFixed(1)} menit
-
--------------------------------
-🌍 VISIBILITAS
--------------------------------
-Yallop              : ${last.yallop}
-Odeh                : ${last.odeh}
-
--------------------------------
-📊 KESIMPULAN
--------------------------------
-MABIMS              : ${last.visible ? "✅ MEMENUHI" : "❌ BELUM"}
-`;
-};
-
-// INIT
-loadMarkazList();
