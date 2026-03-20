@@ -15,6 +15,7 @@ function estimateIjtima(date) {
   const diffDays = (date - base) / 86400000;
   const lunation = diffDays / 29.530588;
   const k = Math.round(lunation);
+
   return new Date(base.getTime() + k * 29.530588 * 86400000);
 }
 
@@ -55,7 +56,7 @@ export function calculateHilal(date, lat, lon, tz) {
   );
 
   // ========================
-  // ELONGASI
+  // ELONGASI (FIX BUG BESAR)
   // ========================
   let elongation = Math.abs(moon.lambda - sun.lambda);
   if (elongation > 180) elongation = 360 - elongation;
@@ -79,7 +80,7 @@ export function calculateHilal(date, lat, lon, tz) {
   const semiDiameter = 0.2725;
 
   // ========================
-  // ALTITUDES
+  // ALTITUDE
   // ========================
   const apparentAltitude = moonHor.alt + refraction;
   const observedAltitude = apparentAltitude + semiDiameter;
@@ -115,59 +116,34 @@ export function calculateHilal(date, lat, lon, tz) {
   // ========================
   // BEST TIME
   // ========================
-  const bestTime =
-    sunset + (moonLag / 60) / 2;
+  const bestTime = sunset + (moonLag / 60) / 2;
 
   return {
-    // ========================
-    // CORE
-    // ========================
     JD,
     deltaT,
 
-    // ========================
-    // SUN
-    // ========================
     sunAltitude: sunHor.alt,
     sunAzimuth: sunHor.az,
 
-    // ========================
-    // MOON
-    // ========================
     moonAltitude: moonHor.alt,
     apparentAltitude,
     observedAltitude,
     moonAzimuth: moonHor.az,
 
-    // ========================
-    // GEOMETRY
-    // ========================
     elongation,
 
-    // ========================
-    // CORRECTIONS
-    // ========================
     refraction,
     parallaxAlt,
     semiDiameter,
 
-    // ========================
-    // TIME
-    // ========================
     sunset,
     moonLag,
     bestTime,
 
-    // ========================
-    // VISIBILITY
-    // ========================
     yallop,
     odeh,
     visible,
 
-    // ========================
-    // PHASE
-    // ========================
     ijtima,
     moonAge
   };
