@@ -59,43 +59,37 @@ pre {
 
 <body>
 
-<h2>🌙 Alfajri - Dashboard Rukyat</h2>
+<h2>🌙 Alfajri Observatorium</h2>
 
-<div class="card">
-  <h3>📍 Lokasi / Markaz</h3>
+<div style="display:flex; gap:20px;">
 
-  <label>Nama Markaz</label>
-  <input id="markaz" placeholder="Pondok Pesantren Nuris Salafiyyah">
+  <!-- LEFT PANEL -->
+  <div style="width:300px; background:#fff; padding:15px; border-radius:10px;">
+    <h3>📍 Markaz</h3>
 
-  <label>Latitude</label>
-  <input id="lat" type="number" step="0.000001" placeholder="-8.28">
+    <input id="markaz" placeholder="Nama Markaz"><br>
+    <input id="lat" placeholder="Latitude"><br>
+    <input id="lon" placeholder="Longitude"><br>
+    <input id="elevation" placeholder="Elevasi"><br>
+    <input id="tz" placeholder="Timezone" value="7"><br>
 
-  <label>Longitude</label>
-  <input id="lon" type="number" step="0.000001" placeholder="113.38">
+    <button onclick="getGPS()">GPS</button>
+    <button onclick="saveMarkaz()">Simpan</button>
+    <button onclick="deleteMarkaz()">Hapus</button>
 
-  <label>Elevasi (mdpl)</label>
-  <input id="elevation" type="number" value="0">
+    <select id="markazList"></select>
+  </div>
 
-  <label>Zona Waktu</label>
-  <input id="tz" type="number" value="7">
+  <!-- RIGHT PANEL -->
+  <div style="flex:1; background:#111; padding:15px; border-radius:10px; color:#0f0;">
+    <h3>🔭 Output</h3>
 
-  <button onclick="getGPS()">📡 Ambil GPS</button>
-  <button onclick="saveMarkaz()">💾 Simpan</button>
-  <button onclick="deleteMarkaz()">🗑 Hapus</button>
+    <button onclick="run()">Hitung</button>
+    <button onclick="exportPDF()">Export PDF</button>
 
-  <label>Daftar Markaz</label>
-  <select id="markazList"></select>
-</div>
+    <pre id="out"></pre>
+  </div>
 
-<div class="card">
-  <h3>⚙️ Aksi</h3>
-  <button onclick="run()">🔭 Hitung Hilal</button>
-  <button onclick="exportPDF()">📄 Export PDF</button>
-</div>
-
-<div class="card">
-  <h3>📊 Hasil</h3>
-  <pre id="out">Klik "Hitung" untuk melihat hasil...</pre>
 </div>
 
 <script type="module" src="/js/app.js"></script>
