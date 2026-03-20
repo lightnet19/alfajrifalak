@@ -8,88 +8,181 @@ import { calculateHilal } from "./engine/hilal.js";
 
 let last = null;
 
-// ========================
-// MAIN RUN
-// ========================
-window.run = () => {
-  const lat = -8.28;   // Gunungsari (default)
-  const lon = 113.38;
-  const tz = 7;
+function el(id) {
+  return document.getElementById(id);
+}
 
-  const date = new Date();
+function num(value, digits = 2) {
+  return Number.isFinite(value) ? value.toFixed(digits) : "-";
+}
 
-  // 🔭 HITUNG (ENGINE OBSERVATORIUM)
-  last = calculateHilal(date, lat, lon, tz);
+function loadMarkazList() {
+  const list = getMarkazList();
+  const select = el("markazList");
+  if (!select) return;
 
-  // ========================
-  // 📊 OUTPUT FULL OBSERVATORIUM
-  // ========================
-  document.getElementById("out").textContent = `
+  select.innerHTML = "";
+
+  if (!list.length) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.text = "-- belum ada markaz tersimpan --";
+    select.appendChild(opt);
+    return;
+  }
+
+  list.forEach((m, i) => {
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.text = `${m.name} (${m.lat}, ${m.lon})`;
+    select.appendChild(opt);
+  });
+}
+
+function syncSelectedMarkazToForm(index) {
+  const m = getMarkaz(index);
+  if (!m) return;
+
+  el("markaz").value = m.name || "";
+  el("lat").value = m.lat ?? "";
+  el("lon").value = m.lon ?? "";
+  el("elevation").value = m.elevation ?? 0;
+  el("tz").value = m.tz ?? 7;
+}
+
+function renderOutput(result) {
+  el("out").textContent = `
 🌙 HASIL RUKYAT (OBSERVATORIUM)
 
-JD                : ${last.JD}
-DeltaT            : ${last.deltaT} s
-Sunset            : ${last.sunset}
+MARKAZ              : ${last.markaz || "-"}
+
+JD                  : ${num(result.JD, 6)}
+DeltaT              : ${num(result.deltaT, 2)} s
+Sunset              : ${num(result.sunset, 6)}
 
 -------------------------------
 🌞 MATAHARI
 -------------------------------
-Altitude Sun      : ${last.sunAltitude?.toFixed(2)}°
-Azimuth Sun       : ${last.sunAzimuth?.toFixed(2)}°
+Altitude Sun        : ${num(result.sunAltitude)}°
+Azimuth Sun         : ${num(result.sunAzimuth)}°
 
 -------------------------------
 🌙 HILAL
 -------------------------------
-Altitude (Geo)      : ${last.moonAltitude?.toFixed(2)}°
-Altitude (Apparent) : ${last.apparentAltitude?.toFixed(2)}°
-Altitude (Observed) : ${last.observedAltitude?.toFixed(2)}°
+Altitude (Geo)      : ${num(result.moonAltitude)}°
+Altitude (Apparent) : ${num(result.apparentAltitude)}°
+Altitude (Observed) : ${num(result.observedAltitude)}°
 
-Azimuth Hilal       : ${last.moonAzimuth?.toFixed(2)}°
+Azimuth Hilal       : ${num(result.moonAzimuth)}°
+Elongasi            : ${num(result.elongation)}°
 
-Elongasi            : ${last.elongation?.toFixed(2)}°
-
-Refraction          : ${last.refraction?.toFixed(3)}°
-Parallax            : ${last.parallaxAlt?.toFixed(2)}°
-Semi Diameter       : ${last.semiDiameter?.toFixed(2)}°
+Refraction          : ${num(result.refraction, 3)}°
+Parallax            : ${num(result.parallaxAlt)}°
+Semi Diameter       : ${num(result.semiDiameter)}°
 
 -------------------------------
 ⏳ PARAMETER RUKYAT
 -------------------------------
-Moon Lag            : ${last.moonLag?.toFixed(1)} menit
+Moon Lag            : ${num(result.moonLag, 1)} menit
+Best Time           : ${num(result.bestTime, 2)}
+Umur Hilal          : ${num(result.moonAge, 2)} jam
 
 -------------------------------
 🌍 VISIBILITAS
 -------------------------------
-Yallop              : ${last.yallop}
-Odeh                : ${last.odeh}
+Yallop              : ${result.yallop || "-"}
+Odeh                : ${result.odeh || "-"}
 
 -------------------------------
 📊 KESIMPULAN
 -------------------------------
-MABIMS              : ${last.visible ? "✅ MEMENUHI" : "❌ BELUM"}
+MABIMS              : ${result.visible ? "✅ MEMENUHI" : "❌ BELUM"}
 `;
-};
-// ========================
-// DMS FORMAT (SAFE)
-// ========================
-function dms(val) {
-  if (val === undefined || val === null || isNaN(val)) return "-";
-
-  // normalize sudut
-  val = ((val % 360) + 360) % 360;
-
-  const d = Math.floor(val);
-  const m = Math.floor((val - d) * 60);
-  const s = (((val - d) * 60 - m) * 60).toFixed(2);
-
-  return `${d} deg ${m} min ${s} sec`;
 }
-// ========================
-// EXPORT PDF (FULL)
-// ========================
-window.exportPDF = () => {
+
+window.getGPS = function () {
+  if (!navigator.geolocation) {
+    alert("GPS tidak didukung browser ini.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      el("lat").value = pos.coords.latitude.toFixed(6);
+      el("lon").value = pos.coords.longitude.toFixed(6);
+      el("elevation").value = Math.round(pos.coords.altitude || 0);
+      alert("Lokasi GPS berhasil diambil.");
+    },
+    () => alert("Gagal mengambil GPS.")
+  );
+};
+
+window.saveMarkaz = function () {
+  const name = (el("markaz")?.value || "").trim();
+  const lat = parseFloat(el("lat")?.value);
+  const lon = parseFloat(el("lon")?.value);
+  const elevation = parseFloat(el("elevation")?.value || "0");
+  const tz = parseFloat(el("tz")?.value || "7");
+
+  if (!name || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+    alert("Isi nama markaz, latitude, dan longitude terlebih dahulu.");
+    return;
+  }
+
+  addMarkaz({ name, lat, lon, elevation, tz });
+  loadMarkazList();
+  alert("Markaz disimpan.");
+};
+
+window.deleteMarkaz = function () {
+  const index = el("markazList")?.value;
+  if (index === "" || index === null || index === undefined) {
+    alert("Pilih markaz dulu.");
+    return;
+  }
+
+  removeMarkaz(index);
+  loadMarkazList();
+  alert("Markaz dihapus.");
+};
+
+window.run = function () {
+  const markazName = (el("markaz")?.value || "").trim() || "Tanpa Nama";
+  const lat = parseFloat(el("lat")?.value);
+  const lon = parseFloat(el("lon")?.value);
+  const tz = parseFloat(el("tz")?.value || "7");
+  const elevation = parseFloat(el("elevation")?.value || "0");
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    alert("Latitude / Longitude belum diisi dengan benar.");
+    return;
+  }
+
+  const date = new Date();
+  const result = calculateHilal(date, lat, lon, tz);
+
+  last = {
+    ...result,
+    markaz: markazName,
+    lat,
+    lon,
+    tz,
+    elevation,
+    date
+  };
+
+  renderOutput(last);
+};
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? "-" : d.toLocaleString();
+}
+
+window.exportPDF = function () {
   if (!last) {
-    alert("Klik HITUNG dulu!");
+    alert("Klik HITUNG dulu.");
     return;
   }
 
@@ -98,10 +191,10 @@ window.exportPDF = () => {
 
   let y = 15;
 
-  const add = (t) => {
+  const add = (text) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(t, 15, y);
+    doc.text(text, 15, y);
     y += 6;
 
     if (y > 280) {
@@ -110,17 +203,15 @@ window.exportPDF = () => {
     }
   };
 
-  const title = (t) => {
+  const title = (text) => {
     doc.setFont("helvetica", "bold");
-    doc.text(t, 15, y);
+    doc.setFontSize(11);
+    doc.text(text, 15, y);
     y += 7;
   };
 
-  // =========================
-  // HEADER
-  // =========================
-  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
   doc.text("LAPORAN RUKYAT HILAL", 105, y, { align: "center" });
   y += 7;
 
@@ -128,103 +219,73 @@ window.exportPDF = () => {
   doc.text("LEMBAGA FALAKIYAH PCNU KENCONG", 105, y, { align: "center" });
   y += 10;
 
-  // =========================
-  // IDENTITAS
-  // =========================
   title("A. Identitas Markaz");
+  add(`Markaz        : ${last.markaz || "-"}`);
+  add(`Lintang       : ${num(last.lat, 6)}`);
+  add(`Bujur         : ${num(last.lon, 6)}`);
+  add(`Elevasi       : ${num(last.elevation, 2)} mdpl`);
+  add(`Zona Waktu    : UTC+${num(last.tz, 1)}`);
 
-  add(`Markaz        : ${last.markaz || "Tanpa Nama"}`);
-  add(`Lintang       : ${last.lat || "-"}`);
-  add(`Bujur         : ${last.lon || "-"}`);
-  add(`Elevasi       : ${last.elevation || 0} mdpl`);
-  add(`Zona Waktu    : UTC+${last.tz || 7}`);
-
-  // =========================
-  // IJTIMA
-  // =========================
   title("B. Data Ijtima");
+  add(`Tanggal Ijtima : ${formatDateTime(last.ijtima)}`);
+  add(`JD             : ${num(last.JD, 6)}`);
+  add(`Delta T        : ${num(last.deltaT, 2)} detik`);
 
-  add(`Tanggal Ijtima : ${new Date(last.ijtima).toLocaleString()}`);
-  add(`JD             : ${last.JD.toFixed(6)}`);
-  add(`Delta T        : ${last.deltaT.toFixed(2)} detik`);
-
-  // =========================
-  // MATAHARI
-  // =========================
   title("C. Data Matahari");
+  add(`Sunset         : ${num(last.sunset, 6)}`);
+  add(`Altitude       : ${num(last.sunAltitude)} deg`);
+  add(`Azimuth        : ${num(last.sunAzimuth)} deg`);
 
-  add(`Altitude : ${last.sunAltitude.toFixed(2)} deg`);
-  add(`Azimuth  : ${last.sunAzimuth.toFixed(2)} deg`);
-
-  // =========================
-  // HILAL
-  // =========================
   title("D. Data Hilal");
+  add(`Altitude Geo      : ${num(last.moonAltitude)} deg`);
+  add(`Altitude Apparent : ${num(last.apparentAltitude)} deg`);
+  add(`Altitude Mar'i    : ${num(last.observedAltitude)} deg`);
+  add(`Azimuth           : ${num(last.moonAzimuth)} deg`);
+  add(`Elongasi          : ${num(last.elongation)} deg`);
 
-  add(`Altitude Geo      : ${last.moonAltitude.toFixed(2)} deg`);
-  add(`Altitude Apparent : ${last.apparentAltitude.toFixed(2)} deg`);
-  add(`Altitude Mar'i    : ${last.observedAltitude.toFixed(2)} deg`);
-
-  add(`Azimuth           : ${last.moonAzimuth.toFixed(2)} deg`);
-  add(`Elongasi          : ${last.elongation.toFixed(2)} deg`);
-
-  // =========================
-  // PARAMETER
-  // =========================
   title("E. Parameter Hilal");
+  add(`Refraction    : ${num(last.refraction, 3)} deg`);
+  add(`Parallax      : ${num(last.parallaxAlt)} deg`);
+  add(`Semi Diameter : ${num(last.semiDiameter)} deg`);
 
-  add(`Refraction    : ${last.refraction.toFixed(3)} deg`);
-  add(`Parallax      : ${last.parallaxAlt.toFixed(2)} deg`);
-  add(`Semi Diameter : ${last.semiDiameter.toFixed(2)} deg`);
-
-  // =========================
-  // RUKYAT
-  // =========================
   title("F. Parameter Rukyat");
+  add(`Moon Lag   : ${num(last.moonLag, 2)} menit`);
+  add(`Best Time  : ${num(last.bestTime, 2)}`);
+  add(`Umur Hilal : ${num(last.moonAge, 2)} jam`);
 
-  add(`Moon Lag  : ${last.moonLag.toFixed(2)} menit`);
-  add(`Best Time : ${last.bestTime.toFixed(2)}`);
-  add(`Umur Hilal: ${last.moonAge.toFixed(2)} jam`);
-
-  // =========================
-  // VISIBILITAS
-  // =========================
   title("G. Visibilitas");
+  add(`Yallop : ${last.yallop || "-"}`);
+  add(`Odeh   : ${last.odeh || "-"}`);
+  add(`Kesimpulan : ${last.visible ? "Memenuhi Kriteria MABIMS" : "Belum Memenuhi Kriteria"}`);
 
-  add(`Yallop : ${last.yallop}`);
-  add(`Odeh   : ${last.odeh}`);
-
-  const kesimpulan = last.visible
-    ? "Memenuhi Kriteria MABIMS"
-    : "Belum Memenuhi Kriteria";
-
-  add(`Kesimpulan : ${kesimpulan}`);
-
-  // =========================
-  // PENGESAHAN
-  // =========================
   title("H. Pengesahan");
-
   add("Mengetahui,");
   add("Lembaga Falakiyah PCNU Kencong");
-
   y += 15;
-
   add("__________________________");
   add("Ketua");
-
   y += 10;
   add(`Tanggal: ${new Date().toLocaleDateString()}`);
 
-  // =========================
-  // FOOTER
-  // =========================
   doc.setFontSize(8);
-  doc.text(
-    "Generated by Alfajri - Sistem Rukyat Observatorium",
-    15,
-    285
-  );
+  doc.text("Generated by Alfajri - Sistem Rukyat Observatorium", 15, 285);
 
   doc.save("laporan-rukyat-alfajri.pdf");
 };
+
+function init() {
+  const select = el("markazList");
+  if (select) {
+    select.addEventListener("change", function () {
+      syncSelectedMarkazToForm(this.value);
+    });
+  }
+
+  loadMarkazList();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
