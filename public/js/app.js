@@ -69,7 +69,7 @@ MABIMS              : ${last.visible ? "✅ MEMENUHI" : "❌ BELUM"}
 // ========================
 window.exportPDF = () => {
   if (!last) {
-    alert("Silakan klik HITUNG dulu!");
+    alert("Klik HITUNG dulu!");
     return;
   }
 
@@ -79,135 +79,121 @@ window.exportPDF = () => {
   let y = 15;
 
   const add = (t) => {
-    doc.text(t, 15, y);
+    doc.setFont("courier", "normal");
+    doc.setFontSize(9);
+    doc.text(t, 10, y);
     y += 5;
   };
 
   const line = () => {
-    doc.line(15, y, 195, y);
+    doc.text("=".repeat(95), 10, y);
     y += 6;
   };
 
   // =========================
   // HEADER
   // =========================
-  doc.setFontSize(14);
-  doc.text("LAPORAN RUKYAT HILAL", 105, y, { align: "center" });
+  doc.setFont("courier", "bold");
+  doc.setFontSize(11);
+
+  doc.text("Awal Bulan Hijriyah (Simulasi Alfajri)", 10, y);
   y += 6;
 
-  doc.setFontSize(10);
-  doc.text("LEMBAGA FALAKIYAH PCNU KENCONG", 105, y, { align: "center" });
-  y += 6;
+  add(`Markaz           : PCNU KENCONG`);
+  add(`Lintang          : -08° 17′`);
+  add(`Bujur            : 113° 22′`);
+  add(`Elevasi          : 15 mdpl`);
+  add(`Zona Waktu       : UTC+7`);
 
-  doc.text("Sistem Alfajri - Observatorium Digital", 105, y, { align: "center" });
-  y += 8;
+  y += 4;
 
-  line();
-
-  // =========================
-  // DATA UMUM
-  // =========================
-  doc.setFontSize(10);
-  add(`JD Ijtima           : ${last.JD}`);
-  add(`Delta T             : ${last.deltaT} s`);
-  add(`Sunset              : ${last.sunset}`);
-
-  add(`Tanggal Ijtima      : ${last.ijtima}`);
-  add(`Umur Hilal          : ${last.moonAge?.toFixed(2)} jam`);
+  add(`Algoritma        : Meeus + Observatorium Upgrade`);
+  add(`Sistem           : Alfajri Digital`);
 
   line();
 
   // =========================
-  // MATAHARI
+  // IJTIMA
   // =========================
-  add("DATA MATAHARI");
-  add(`Altitude            : ${last.sunAltitude?.toFixed(2)}°`);
-  add(`Azimuth             : ${last.sunAzimuth?.toFixed(2)}°`);
+  add(`Tanggal Ijtima   : ${last.ijtima}`);
+  add(`JD Ijtima        : ${last.JD}`);
+  add(`DeltaT           : ${last.deltaT} s`);
+
+  add(`Sunset           : ${last.sunset}`);
 
   line();
 
   // =========================
-  // HILAL
+  // KOORDINAT
   // =========================
-  add("DATA HILAL");
-
-  add(`Altitude Geo        : ${last.moonAltitude?.toFixed(2)}°`);
-  add(`Altitude Apparent   : ${last.apparentAltitude?.toFixed(2)}°`);
-  add(`Altitude Mar'i      : ${last.observedAltitude?.toFixed(2)}°`);
-
-  add(`Azimuth             : ${last.moonAzimuth?.toFixed(2)}°`);
-  add(`Elongasi            : ${last.elongation?.toFixed(2)}°`);
+  add(`Az. Matahari     : ${last.sunAzimuth?.toFixed(2)}°`);
+  add(`Az. Hilal        : ${last.moonAzimuth?.toFixed(2)}°`);
 
   line();
 
   // =========================
-  // KOREKSI
+  // TINGGI HILAL
   // =========================
-  add("KOREKSI");
-
-  add(`Refraction          : ${last.refraction?.toFixed(3)}°`);
-  add(`Parallax            : ${last.parallaxAlt?.toFixed(2)}°`);
-  add(`Semi Diameter       : ${last.semiDiameter?.toFixed(2)}°`);
+  add(`T. Hilal Geo     : ${last.moonAltitude?.toFixed(2)}°`);
+  add(`T. Apparent      : ${last.apparentAltitude?.toFixed(2)}°`);
+  add(`T. Mar'i         : ${last.observedAltitude?.toFixed(2)}°`);
 
   line();
 
   // =========================
-  // PARAMETER RUKYAT
+  // PARAMETER
   // =========================
-  add("PARAMETER RUKYAT");
+  add(`Elongasi         : ${last.elongation?.toFixed(2)}°`);
+  add(`Refraction       : ${last.refraction?.toFixed(3)}°`);
+  add(`Parallax         : ${last.parallaxAlt?.toFixed(2)}°`);
+  add(`Semi Diameter    : ${last.semiDiameter?.toFixed(2)}°`);
 
-  add(`Moon Lag            : ${last.moonLag?.toFixed(2)} menit`);
-  add(`Best Time           : ${last.bestTime?.toFixed(2)}`);
+  line();
+
+  // =========================
+  // WAKTU
+  // =========================
+  add(`Umur Hilal       : ${last.moonAge?.toFixed(2)} jam`);
+  add(`Lama Hilal       : ${last.moonLag?.toFixed(2)} menit`);
+  add(`Best Time        : ${last.bestTime?.toFixed(2)}`);
 
   line();
 
   // =========================
   // VISIBILITAS
   // =========================
-  add("VISIBILITAS");
-
-  add(`Yallop              : ${last.yallop}`);
-  add(`Odeh                : ${last.odeh}`);
+  add(`Yallop           : ${last.yallop}`);
+  add(`Odeh             : ${last.odeh}`);
 
   line();
 
   // =========================
   // KESIMPULAN
   // =========================
-  doc.setFont("helvetica", "bold");
-
   const kesimpulan = last.visible
-    ? "HILAL LAYAK TERLIHAT (MABIMS)"
-    : "HILAL BELUM LAYAK (ISTIKMAL)";
+    ? "Layak (MABIMS)"
+    : "Tidak Layak";
 
-  add(`KESIMPULAN          : ${kesimpulan}`);
+  add(`KESIMPULAN       : ${kesimpulan}`);
 
-  y += 8;
+  line();
 
   // =========================
-  // PENGESAHAN
+  // KETERANGAN
   // =========================
-  doc.setFont("helvetica", "normal");
+  add("Keterangan:");
+  add("Az. = Azimuth");
+  add("T.  = Tinggi");
+  add("Geo = Geosentris");
+  add("Mar'i = Teramati");
 
-  add("Mengetahui,");
-  y += 5;
+  line();
 
-  add("Lembaga Falakiyah PCNU Kencong");
-  y += 20;
-
-  add("______________________________");
-  add("Ketua");
-
-  y += 10;
-  add(`Tanggal: ${new Date().toLocaleDateString()}`);
-
+  // =========================
   // FOOTER
-  doc.setFontSize(8);
-  doc.text(
-    "Generated by Alfajri - Sistem Rukyat Observatorium",
-    15,
-    285
-  );
+  // =========================
+  add("Powered by Alfajri Observatorium Digital");
+  add("Lembaga Falakiyah PCNU Kencong");
 
-  doc.save("laporan-rukyat-observatorium.pdf");
+  doc.save("laporan-kanzul-style.pdf");
 };
