@@ -76,39 +76,45 @@ window.exportPDF = () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  let y = 15;
+  let y = 10;
 
   const add = (t) => {
     doc.setFont("courier", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.text(t, 10, y);
-    y += 5;
+    y += 4.5;
   };
 
   const line = () => {
-    doc.text("=".repeat(95), 10, y);
-    y += 6;
+    doc.text("=".repeat(100), 10, y);
+    y += 5;
+  };
+
+  const dms = (val) => {
+    if (!val && val !== 0) return "-";
+    const d = Math.floor(val);
+    const m = Math.floor((val - d) * 60);
+    const s = (((val - d) * 60 - m) * 60).toFixed(2);
+    return `${d}° ${m}′ ${s}″`;
   };
 
   // =========================
   // HEADER
   // =========================
   doc.setFont("courier", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(10);
 
-  doc.text("Awal Bulan Hijriyah (Simulasi Alfajri)", 10, y);
-  y += 6;
+  add("Awal Bulan Hijriyah (Simulasi Alfajri)");
 
-  add(`Markaz           : PCNU KENCONG`);
-  add(`Lintang          : -08° 17′`);
-  add(`Bujur            : 113° 22′`);
-  add(`Elevasi          : 15 mdpl`);
-  add(`Zona Waktu       : UTC+7`);
+  add("Markaz           : PCNU KENCONG");
+  add("Lintang          : -08° 17′");
+  add("Bujur            : 113° 22′");
+  add("Elevasi          : 15 mdpl");
+  add("Zona Waktu       : 7.0 UTC");
 
-  y += 4;
-
-  add(`Algoritma        : Meeus + Observatorium Upgrade`);
-  add(`Sistem           : Alfajri Digital`);
+  add("");
+  add("Algoritma        : Meeus + Observatorium Upgrade");
+  add("Jumlah Koreksi   : Simplified High Precision");
 
   line();
 
@@ -126,27 +132,39 @@ window.exportPDF = () => {
   // =========================
   // KOORDINAT
   // =========================
-  add(`Az. Matahari     : ${last.sunAzimuth?.toFixed(2)}°`);
-  add(`Az. Hilal        : ${last.moonAzimuth?.toFixed(2)}°`);
+  add(`Az. Matahari     : ${dms(last.sunAzimuth)}`);
+  add(`Az. Hilal        : ${dms(last.moonAzimuth)}`);
 
   line();
 
   // =========================
   // TINGGI HILAL
   // =========================
-  add(`T. Hilal Geo     : ${last.moonAltitude?.toFixed(2)}°`);
-  add(`T. Apparent      : ${last.apparentAltitude?.toFixed(2)}°`);
-  add(`T. Mar'i         : ${last.observedAltitude?.toFixed(2)}°`);
+  add(`T. Hilal Geo     : ${dms(last.moonAltitude)}`);
+  add(`T. Apparent      : ${dms(last.apparentAltitude)}`);
+  add(`T. Mar'i         : ${dms(last.observedAltitude)}`);
 
   line();
 
   // =========================
   // PARAMETER
   // =========================
-  add(`Elongasi         : ${last.elongation?.toFixed(2)}°`);
+  add(`Elongasi         : ${dms(last.elongation)}`);
   add(`Refraction       : ${last.refraction?.toFixed(3)}°`);
-  add(`Parallax         : ${last.parallaxAlt?.toFixed(2)}°`);
-  add(`Semi Diameter    : ${last.semiDiameter?.toFixed(2)}°`);
+  add(`Parallax         : ${dms(last.parallaxAlt)}`);
+  add(`Semi Diameter    : ${dms(last.semiDiameter)}`);
+
+  // tambahan
+  const illumination = (1 - Math.cos(last.elongation * Math.PI/180)) / 2;
+  const width = last.semiDiameter * illumination;
+  const nurul = illumination * last.observedAltitude;
+  const qOdeh = last.observedAltitude - (7.1651 - 6.3226 * last.elongation);
+
+  add(`Illuminasi       : ${(illumination*100).toFixed(2)} %`);
+  add(`Lebar Hilal      : ${dms(width)}`);
+  add(`Nurul Hilal      : ${nurul.toFixed(4)}`);
+  add(`Range q Odeh     : ${qOdeh.toFixed(3)}`);
+  add(`Jarak Bumi-Bulan : ${(384400).toFixed(2)} km`);
 
   line();
 
@@ -165,16 +183,11 @@ window.exportPDF = () => {
   add(`Yallop           : ${last.yallop}`);
   add(`Odeh             : ${last.odeh}`);
 
-  line();
-
-  // =========================
-  // KESIMPULAN
-  // =========================
   const kesimpulan = last.visible
-    ? "Layak (MABIMS)"
-    : "Tidak Layak";
+    ? "Hilal Terlihat"
+    : "Tidak Terlihat";
 
-  add(`KESIMPULAN       : ${kesimpulan}`);
+  add(`Is Visible?      : ${kesimpulan}`);
 
   line();
 
@@ -182,18 +195,17 @@ window.exportPDF = () => {
   // KETERANGAN
   // =========================
   add("Keterangan:");
-  add("Az. = Azimuth");
-  add("T.  = Tinggi");
-  add("Geo = Geosentris");
+  add("Az.   = Azimuth");
+  add("T.    = Tinggi");
+  add("Geo   = Geosentris");
+  add("Topo  = Toposentris");
   add("Mar'i = Teramati");
+  add("RA    = Right Ascension");
 
   line();
 
-  // =========================
-  // FOOTER
-  // =========================
-  add("Powered by Alfajri Observatorium Digital");
+  add("Powered by: Alfajri Observatorium Digital");
   add("Lembaga Falakiyah PCNU Kencong");
 
-  doc.save("laporan-kanzul-style.pdf");
+  doc.save("kanzul-style-full.pdf");
 };
