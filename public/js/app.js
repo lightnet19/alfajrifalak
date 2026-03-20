@@ -76,136 +76,135 @@ window.exportPDF = () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  let y = 10;
+  let y = 15;
 
   const add = (t) => {
-    doc.setFont("courier", "normal");
-    doc.setFontSize(8.5);
-    doc.text(t, 10, y);
-    y += 4.5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(t, 15, y);
+    y += 6;
+
+    // auto page break
+    if (y > 280) {
+      doc.addPage();
+      y = 20;
+    }
   };
 
-  const line = () => {
-    doc.text("=".repeat(100), 10, y);
-    y += 5;
-  };
-
-  const dms = (val) => {
-    if (!val && val !== 0) return "-";
-    const d = Math.floor(val);
-    const m = Math.floor((val - d) * 60);
-    const s = (((val - d) * 60 - m) * 60).toFixed(2);
-    return `${d}° ${m}′ ${s}″`;
+  const title = (t) => {
+    doc.setFont("helvetica", "bold");
+    doc.text(t, 15, y);
+    y += 7;
   };
 
   // =========================
-  // HEADER
+  // HEADER RESMI
   // =========================
-  doc.setFont("courier", "bold");
-  doc.setFontSize(10);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("LAPORAN RUKYAT HILAL", 105, y, { align: "center" });
+  y += 7;
 
-  add("Awal Bulan Hijriyah (Simulasi Alfajri)");
+  doc.setFontSize(11);
+  doc.text("LEMBAGA FALAKIYAH PCNU KENCONG", 105, y, { align: "center" });
+  y += 10;
 
-  add("Markaz           : PCNU KENCONG");
-  add("Lintang          : -08° 17′");
-  add("Bujur            : 113° 22′");
-  add("Elevasi          : 15 mdpl");
-  add("Zona Waktu       : 7.0 UTC");
+  // =========================
+  // IDENTITAS
+  // =========================
+  title("A. Identitas Markaz");
 
-  add("");
-  add("Algoritma        : Meeus + Observatorium Upgrade");
-  add("Jumlah Koreksi   : Simplified High Precision");
-
-  line();
+  add("Markaz        : PCNU Kencong");
+  add("Lintang       : -8.28");
+  add("Bujur         : 113.38");
+  add("Elevasi       : 15 mdpl");
+  add("Zona Waktu    : UTC+7");
 
   // =========================
   // IJTIMA
   // =========================
-  add(`Tanggal Ijtima   : ${last.ijtima}`);
-  add(`JD Ijtima        : ${last.JD}`);
-  add(`DeltaT           : ${last.deltaT} s`);
+  title("B. Data Ijtima");
 
-  add(`Sunset           : ${last.sunset}`);
-
-  line();
+  add(`Tanggal Ijtima : ${new Date(last.ijtima).toLocaleString()}`);
+  add(`JD             : ${last.JD.toFixed(6)}`);
+  add(`Delta T        : ${last.deltaT.toFixed(2)} detik`);
 
   // =========================
-  // KOORDINAT
+  // MATAHARI
   // =========================
-  add(`Az. Matahari     : ${dms(last.sunAzimuth)}`);
-  add(`Az. Hilal        : ${dms(last.moonAzimuth)}`);
+  title("C. Data Matahari");
 
-  line();
+  add(`Altitude : ${last.sunAltitude.toFixed(2)} deg`);
+  add(`Azimuth  : ${last.sunAzimuth.toFixed(2)} deg`);
 
   // =========================
-  // TINGGI HILAL
+  // HILAL
   // =========================
-  add(`T. Hilal Geo     : ${dms(last.moonAltitude)}`);
-  add(`T. Apparent      : ${dms(last.apparentAltitude)}`);
-  add(`T. Mar'i         : ${dms(last.observedAltitude)}`);
+  title("D. Data Hilal");
 
-  line();
+  add(`Altitude Geo      : ${last.moonAltitude.toFixed(2)} deg`);
+  add(`Altitude Apparent : ${last.apparentAltitude.toFixed(2)} deg`);
+  add(`Altitude Mar'i    : ${last.observedAltitude.toFixed(2)} deg`);
+
+  add(`Azimuth           : ${last.moonAzimuth.toFixed(2)} deg`);
+  add(`Elongasi          : ${last.elongation.toFixed(2)} deg`);
 
   // =========================
   // PARAMETER
   // =========================
-  add(`Elongasi         : ${dms(last.elongation)}`);
-  add(`Refraction       : ${last.refraction?.toFixed(3)}°`);
-  add(`Parallax         : ${dms(last.parallaxAlt)}`);
-  add(`Semi Diameter    : ${dms(last.semiDiameter)}`);
+  title("E. Parameter Hilal");
 
-  // tambahan
-  const illumination = (1 - Math.cos(last.elongation * Math.PI/180)) / 2;
-  const width = last.semiDiameter * illumination;
-  const nurul = illumination * last.observedAltitude;
-  const qOdeh = last.observedAltitude - (7.1651 - 6.3226 * last.elongation);
-
-  add(`Illuminasi       : ${(illumination*100).toFixed(2)} %`);
-  add(`Lebar Hilal      : ${dms(width)}`);
-  add(`Nurul Hilal      : ${nurul.toFixed(4)}`);
-  add(`Range q Odeh     : ${qOdeh.toFixed(3)}`);
-  add(`Jarak Bumi-Bulan : ${(384400).toFixed(2)} km`);
-
-  line();
+  add(`Refraction    : ${last.refraction.toFixed(3)} deg`);
+  add(`Parallax      : ${last.parallaxAlt.toFixed(2)} deg`);
+  add(`Semi Diameter : ${last.semiDiameter.toFixed(2)} deg`);
 
   // =========================
-  // WAKTU
+  // RUKYAT
   // =========================
-  add(`Umur Hilal       : ${last.moonAge?.toFixed(2)} jam`);
-  add(`Lama Hilal       : ${last.moonLag?.toFixed(2)} menit`);
-  add(`Best Time        : ${last.bestTime?.toFixed(2)}`);
+  title("F. Parameter Rukyat");
 
-  line();
+  add(`Moon Lag  : ${last.moonLag.toFixed(2)} menit`);
+  add(`Best Time : ${last.bestTime.toFixed(2)}`);
 
   // =========================
   // VISIBILITAS
   // =========================
-  add(`Yallop           : ${last.yallop}`);
-  add(`Odeh             : ${last.odeh}`);
+  title("G. Visibilitas");
+
+  add(`Yallop : ${last.yallop}`);
+  add(`Odeh   : ${last.odeh}`);
 
   const kesimpulan = last.visible
-    ? "Hilal Terlihat"
-    : "Tidak Terlihat";
+    ? "Memenuhi Kriteria MABIMS"
+    : "Belum Memenuhi Kriteria";
 
-  add(`Is Visible?      : ${kesimpulan}`);
-
-  line();
+  add(`Kesimpulan : ${kesimpulan}`);
 
   // =========================
-  // KETERANGAN
+  // PENGESAHAN
   // =========================
-  add("Keterangan:");
-  add("Az.   = Azimuth");
-  add("T.    = Tinggi");
-  add("Geo   = Geosentris");
-  add("Topo  = Toposentris");
-  add("Mar'i = Teramati");
-  add("RA    = Right Ascension");
+  title("H. Pengesahan");
 
-  line();
-
-  add("Powered by: Alfajri Observatorium Digital");
+  add("Mengetahui,");
   add("Lembaga Falakiyah PCNU Kencong");
 
-  doc.save("kanzul-style-full.pdf");
+  y += 15;
+
+  add("__________________________");
+  add("Ketua");
+
+  y += 10;
+  add(`Tanggal: ${new Date().toLocaleDateString()}`);
+
+  // =========================
+  // FOOTER
+  // =========================
+  doc.setFontSize(8);
+  doc.text(
+    "Generated by Alfajri - Sistem Rukyat Observatorium",
+    15,
+    285
+  );
+
+  doc.save("laporan-rukyat-alfajri.pdf");
 };
