@@ -1,3 +1,9 @@
+import {
+  getMarkazList,
+  addMarkaz,
+  deleteMarkaz as removeMarkaz,
+  getMarkaz
+} from "./markazService.js";
 import { calculateHilal } from "./engine/hilal.js";
 
 let last = null;
