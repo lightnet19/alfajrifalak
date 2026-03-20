@@ -7,6 +7,27 @@ import { getRefraction } from "./refraction.js";
 import { applyParallax } from "./parallax.js";
 import { getYallop, getOdeh } from "./visibility.js";
 
+// ========================
+// IJTIMA (APPROX)
+// ========================
+function estimateIjtima(date) {
+  const base = new Date("2026-03-19T01:23:38Z");
+  const diffDays = (date - base) / 86400000;
+  const lunation = diffDays / 29.530588;
+  const k = Math.round(lunation);
+  return new Date(base.getTime() + k * 29.530588 * 86400000);
+}
+
+// ========================
+// MOON AGE
+// ========================
+function getMoonAge(date, ijtima) {
+  return (date - ijtima) / 3600000; // jam
+}
+
+// ========================
+// MAIN ENGINE
+// ========================
 export function calculateHilal(date, lat, lon, tz) {
   const JD = toJulianDate(date);
   const deltaT = getDeltaT(date.getFullYear());
@@ -33,63 +54,121 @@ export function calculateHilal(date, lat, lon, tz) {
     LST
   );
 
-  const elongation = Math.abs(moon.lambda - sun.lambda);
+  // ========================
+  // ELONGASI
+  // ========================
+  let elongation = Math.abs(moon.lambda - sun.lambda);
+  if (elongation > 180) elongation = 360 - elongation;
 
   // ========================
-  // 🔭 KOREKSI OBSERVATORIUM
+  // REFRACTION
   // ========================
-
   const refraction = getRefraction(moonHor.alt);
 
+  // ========================
+  // PARALLAX
+  // ========================
   const parallaxAlt = applyParallax(
     moonHor.alt,
     moon.distance || 384400
   );
 
-  const semiDiameter = 0.2725; // derajat
-
-  const apparentAlt = moonHor.alt + refraction;
-  const observedAlt = apparentAlt + semiDiameter;
+  // ========================
+  // SEMI DIAMETER
+  // ========================
+  const semiDiameter = 0.2725;
 
   // ========================
-  // ⏳ SUNSET & MOON LAG
+  // ALTITUDES
   // ========================
+  const apparentAltitude = moonHor.alt + refraction;
+  const observedAltitude = apparentAltitude + semiDiameter;
 
+  // ========================
+  // SUNSET
+  // ========================
   const sunset = getSunset(date, lat, lon, tz);
 
-  const moonLag = observedAlt > 0 ? observedAlt * 4 : 0;
+  // ========================
+  // MOON LAG
+  // ========================
+  const moonLag = observedAltitude > 0
+    ? observedAltitude * 4
+    : 0;
 
   // ========================
-  // 🌙 VISIBILITY
+  // VISIBILITY
   // ========================
+  const yallop = getYallop(observedAltitude, elongation);
+  const odeh = getOdeh(observedAltitude, elongation);
 
-  const yallop = getYallop(observedAlt, elongation);
-  const odeh = getOdeh(observedAlt, elongation);
+  const visible =
+    observedAltitude > 3 &&
+    elongation > 6.4;
 
-  const visible = observedAlt > 3 && elongation > 6.4;
+  // ========================
+  // IJTIMA & AGE
+  // ========================
+  const ijtima = estimateIjtima(date);
+  const moonAge = getMoonAge(date, ijtima);
+
+  // ========================
+  // BEST TIME
+  // ========================
+  const bestTime =
+    sunset + (moonLag / 60) / 2;
 
   return {
+    // ========================
+    // CORE
+    // ========================
     JD,
     deltaT,
-    sunset,
 
+    // ========================
+    // SUN
+    // ========================
     sunAltitude: sunHor.alt,
     sunAzimuth: sunHor.az,
 
+    // ========================
+    // MOON
+    // ========================
     moonAltitude: moonHor.alt,
-    apparentAltitude: apparentAlt,
-    observedAltitude: observedAlt,
+    apparentAltitude,
+    observedAltitude,
     moonAzimuth: moonHor.az,
 
+    // ========================
+    // GEOMETRY
+    // ========================
     elongation,
+
+    // ========================
+    // CORRECTIONS
+    // ========================
     refraction,
     parallaxAlt,
     semiDiameter,
 
+    // ========================
+    // TIME
+    // ========================
+    sunset,
     moonLag,
+    bestTime,
 
+    // ========================
+    // VISIBILITY
+    // ========================
     yallop,
     odeh,
-    visible
+    visible,
+
+    // ========================
+    // PHASE
+    // ========================
+    ijtima,
+    moonAge
   };
 }
