@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alfajri Dashboard</title>
+  <meta name="description" content="Dashboard rukyat digital Alfajri untuk hisab hilal, simulasi langit, mode rukyat, dan export PDF.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@3.0.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <img src="/assets/logo.svg" alt="Logo Alfajri">
+        <div class="brand-title">
+          <h2>Alfajri Dashboard</h2>
+          <p>oleh Fuad Baidlowi Al-Fajri</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary" href="/">Kembali ke Landing</a>
+    </div>
+  </div>
+
+  <main class="container dashboard">
+    <div class="grid">
+      <div class="card" style="grid-column: span 12; margin-bottom: 6px;">
+        <div class="kicker">Falak Observatory</div>
+        <h1 style="margin: 8px 0 6px;">Mode Rukyat Otomatis</h1>
+        <p class="small" style="margin: 0;">
+          Atur lokasi, tanggal, lalu lihat visual hilal pada momen sunset.
+        </p>
+        <div class="status" id="status">Siap digunakan</div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <aside class="card controls">
+        <div>
+          <label class="label" for="markaz">Markaz</label>
+          <input class="input" id="markaz" placeholder="Gunungsari Umbulsari Jember">
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="useGPS()">📡 Gunakan GPS</button>
+          <button class="btn btn-secondary" onclick="saveMarkaz()">💾 Simpan Markaz</button>
+        </div>
+
+        <div>
+          <label class="label" for="markazList">Markaz Tersimpan</label>
+          <select class="input" id="markazList"></select>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="deleteMarkaz()">🗑 Hapus Markaz</button>
+        </div>
+
+        <div>
+          <label class="label" for="lat">Latitude</label>
+          <input class="input" id="lat" value="-8.17" placeholder="-8.17">
+        </div>
+        <div>
+          <label class="label" for="lon">Longitude</label>
+          <input class="input" id="lon" value="113.71" placeholder="113.71">
+        </div>
+        <div>
+          <label class="label" for="elevation">Elevasi (mdpl)</label>
+          <input class="input" id="elevation" value="11" placeholder="11">
+        </div>
+        <div>
+          <label class="label" for="tz">Timezone</label>
+          <input class="input" id="tz" value="7" placeholder="7">
+        </div>
+        <div>
+          <label class="label" for="date">Tanggal</label>
+          <input class="input" type="date" id="date">
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="run()">Hitung</button>
+          <button class="btn btn-secondary" onclick="play()">Play</button>
+          <button class="btn btn-secondary" onclick="pause()">Pause</button>
+        </div>
+
+        <div>
+          <label class="label" for="timeSlider">Waktu</label>
+          <input class="input" type="range" id="timeSlider" min="0" max="24" step="0.1" value="18">
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="rukyatMode()">🔭 Mode Rukyat</button>
+          <button class="btn btn-secondary" onclick="shareResult()">📤 Share Hasil</button>
+          <button class="btn btn-secondary" onclick="exportPDF()">📄 Export PDF</button>
+        </div>
+
+        <div id="output"></div>
+      </aside>
+
+      <section class="canvas-wrap">
+        <canvas id="skyCanvas"></canvas>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

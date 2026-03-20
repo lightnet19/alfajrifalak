@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5c542"/>
+      <stop offset="100%" stop-color="#fff2c6"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="none"/>
+  <path d="M88 18A38 38 0 1 0 88 102A28 28 0 1 1 88 18Z" fill="url(#g)"/>
+  <circle cx="118" cy="24" r="4" fill="#fff2c6"/>
+  <text x="165" y="78" font-size="46" font-family="Inter, Arial, sans-serif" font-weight="700" fill="#ffffff">Alfajri</text>
+</svg>
