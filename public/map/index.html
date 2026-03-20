@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peta Visibilitas Hilal Indonesia - Alfajri</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <img src="/assets/logo.svg" alt="Logo Alfajri">
+        <div class="brand-title">
+          <h2>Peta Visibilitas Hilal Indonesia</h2>
+          <p>Alfajri</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary" href="/dashboard/index.html">Kembali</a>
+    </div>
+  </div>
+
+  <main class="container section">
+    <div class="card">
+      <div class="map-toolbar">
+        <button class="btn btn-primary" id="mapStart">▶ Jalankan Animasi</button>
+        <button class="btn btn-secondary" id="mapStop">⏸ Stop</button>
+      </div>
+      <div class="timeline-controls">
+        <div>
+          <label class="label" for="mapDate">Tanggal</label>
+          <input class="input" type="date" id="mapDate">
+        </div>
+        <div>
+          <label class="label" for="mapLat">Latitude Utama</label>
+          <input class="input" id="mapLat" value="-8.17">
+        </div>
+        <div>
+          <label class="label" for="mapLon">Longitude Utama</label>
+          <input class="input" id="mapLon" value="113.71">
+        </div>
+        <div>
+          <label class="label" for="mapTz">Timezone</label>
+          <input class="input" id="mapTz" value="7">
+        </div>
+      </div>
+      <canvas id="mapCanvas" class="map-shell"></canvas>
+      <div id="mapInfo" class="map-note">Peta siap.</div>
+    </div>
+  </main>
+
+  <script type="module" src="/js/mapPage.js"></script>
+</body>
+</html>

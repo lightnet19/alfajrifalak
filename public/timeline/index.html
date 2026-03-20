@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timeline Hilal 1 Bulan - Alfajri</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <img src="/assets/logo.svg" alt="Logo Alfajri">
+        <div class="brand-title">
+          <h2>Timeline Hilal 1 Bulan</h2>
+          <p>Alfajri</p>
+        </div>
+      </div>
+      <a class="btn btn-secondary" href="/dashboard/index.html">Kembali</a>
+    </div>
+  </div>
+
+  <main class="container section">
+    <div class="card">
+      <div class="timeline-controls">
+        <div>
+          <label class="label" for="timelineDate">Tanggal Awal</label>
+          <input class="input" type="date" id="timelineDate">
+        </div>
+        <div>
+          <label class="label" for="timelineLat">Latitude</label>
+          <input class="input" id="timelineLat" value="-8.17">
+        </div>
+        <div>
+          <label class="label" for="timelineLon">Longitude</label>
+          <input class="input" id="timelineLon" value="113.71">
+        </div>
+        <div>
+          <label class="label" for="timelineTz">Timezone</label>
+          <input class="input" id="timelineTz" value="7">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="generateTimeline">Generate Timeline</button>
+      <div id="timelineContainer" style="margin-top:16px"></div>
+    </div>
+  </main>
+
+  <script type="module" src="/timeline/timelinePage.js"></script>
+</body>
+</html>
