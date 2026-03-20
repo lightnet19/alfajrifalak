@@ -63,7 +63,21 @@ Odeh                : ${last.odeh}
 MABIMS              : ${last.visible ? "✅ MEMENUHI" : "❌ BELUM"}
 `;
 };
+// ========================
+// DMS FORMAT (SAFE)
+// ========================
+function dms(val) {
+  if (val === undefined || val === null || isNaN(val)) return "-";
 
+  // normalize sudut
+  val = ((val % 360) + 360) % 360;
+
+  const d = Math.floor(val);
+  const m = Math.floor((val - d) * 60);
+  const s = (((val - d) * 60 - m) * 60).toFixed(2);
+
+  return `${d} deg ${m} min ${s} sec`;
+}
 // ========================
 // EXPORT PDF (FULL)
 // ========================
