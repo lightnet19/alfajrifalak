@@ -3,6 +3,12 @@
  * Algoritma: Jean Meeus — Astronomical Algorithms 2nd ed.
  * Al-Fajri v2.3 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js
+ *
+ * CHANGELOG v2.3.1:
+ *  [FIX #1] Pencarian k ijtima: diff pakai hMonth (bukan hMonth-1) → cegah salah bulan
+ *  [FIX #2] Nurul Hilal: rumus dikoreksi → W_arcsec / (2 × SD_arcsec)
+ *  [FIX #3] Umur Hilal: dihitung via selisih JD langsung → akurat lintas hari
+ *  [FIX #4] ARCV: memakai altSunApparent (inkl. refraksi) sesuai definisi Odeh & Yallop
  */
 'use strict';
 
@@ -19,7 +25,8 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   let bestK = kFromYM(approxGreg.year, approxGreg.month), bestDiff = 999;
   for (let dk=-1; dk<=2; dk++) {
     const jde=newMoonJDE(bestK+dk), h=jdToHijri(jde);
-    const diff=Math.abs((h.year-hYear)*12+(h.month-(hMonth-1)));
+    // FIX #1: gunakan h.month - hMonth (bukan hMonth-1); keduanya 1-indexed
+    const diff=Math.abs((h.year-hYear)*12+(h.month-hMonth));
     if (diff<bestDiff) { bestDiff=diff; bestK=bestK+dk; }
   }
 
@@ -65,7 +72,8 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const W_arcsec   = moonT.SD*2*3600*Math.pow(Math.sin(elongTopo*D2R/2),2);
   const W_arcmin   = W_arcsec/60;
   const illuminasi = (1-Math.cos(elongGeo*D2R))/2*100;
-  const nurulHilal = W_arcsec*Math.PI/648000;
+  // FIX #2: Nurul Hilal = rasio lebar hilal terhadap diameter (W / 2SD), bukan W×π/648000
+  const nurulHilal = W_arcsec / (2 * moonT.SD * 3600);
 
   // 8. Ijtima toposentrik (cari elongasi minimum)
   let jdIjtimaT=jdIjtima, minE=999;
@@ -84,10 +92,13 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const ijtimaTopoLT=lt(jdIjtimaT), ijtimaTopoUT=ijtimaTopoLT-tz;
   const bestTimeLT  =moonsetLT?(sunsetLT+moonsetLT)/2:sunsetLT+0.1;
   const lamaHilal   =moonsetLT?moonsetLT-sunsetLT:0;
-  const umurHilal   =sunsetLT-ijtimaGeoLT;
+  // FIX #3: Umur Hilal pakai selisih JD langsung (jam), bukan LT - LT yang bisa negatif/salah
+  const umurHilal   = (jdSunset - jdIjtima) * 24;
 
-  // 10. Arc of Vision (ARCV)
-  const ARCV = altMoonApparent - altSunAirless;
+  // 10. Arc of Vision (ARCV) — Meeus / Odeh / Yallop
+  // FIX #4: ARCV = tinggi bulan apparent − tinggi matahari apparent (inkl. refraksi)
+  const altSunApparent = altSunAirless + refraction(altSunAirless);
+  const ARCV = altMoonApparent - altSunApparent;
 
   // 11. Kriteria visibilitas
   const irnu_vis = altMoonMari>=3.0 && elongGeo>=6.4;
@@ -219,7 +230,7 @@ function renderHilalReport(r) {
   h+=row('Wujudul Hilal',r.wujud?'✓ TERPENUHI':'✗ Tidak Terpenuhi',r.wujud?'g':'r');
   h+=row('Odeh',r.qOdeh>=5.65?'A — Mudah':r.qOdeh>=2?'B — Terlihat':r.qOdeh>=-0.96?'C — Marginal':'D — Tidak',r.qOdeh>=2?'g':r.qOdeh>=-0.96?'a':'r');
   h+='\n'+row('Prediksi Kri. IRNU',pred,'gd');
-  h+=sep()+`<span style="display:block;text-align:center;color:var(--text3);font-size:.68rem">Al-Fajri v2.3 — Jean Meeus — Lembaga Falakiyah PCNU Kencong</span>`;
+  h+=sep()+`<span style="display:block;text-align:center;color:var(--text3);font-size:.68rem">Al-Fajri v2.3.1 — Jean Meeus — Lembaga Falakiyah PCNU Kencong</span>`;
   document.getElementById('hilalOut').innerHTML=h;
 
   // Kartu kriteria
