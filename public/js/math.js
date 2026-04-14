@@ -1,6 +1,6 @@
 /**
  * math.js — Konstanta, helper trigonometri, format, Julian Day, Kalender Hijri
- * Al-Fajri v2.3 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.3.3 | Lembaga Falakiyah PCNU Kencong
  */
 'use strict';
 
@@ -91,9 +91,11 @@ function isHLeap(y) { return [2,5,7,10,13,15,18,21,24,26,29].includes(y % 30); }
 
 /** JD → Hijriyah {year,month,day} */
 function jdToHijri(jd0) {
-  const z=Math.floor(jd0)+0.5, N=z-1948438.5;
+  // FIX v2.3.3: floor(jd0 + 0.5) agar tidak meleset saat jam mendekati transisi
+  const z = Math.floor(jd0 + 0.5) + 0.5, N = z - 1948438.5;
   const cyc=Math.floor(N/10631), rem=N-10631*cyc, jv=Math.floor((rem-29.5001)/354.3671);
   const hY=30*cyc+jv+1;
+
   let jDay=Math.floor(rem-354.3671*jv);
   const md=[0,30,29,30,29,30,29,30,29,30,29,30,29];
   for (let m=1; m<=12; m++) {

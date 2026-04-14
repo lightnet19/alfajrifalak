@@ -1,21 +1,19 @@
 /**
  * hilal.js — Kalkulasi Awal Bulan Hijriyah (Rukyat & Wujudul Hilal)
- * Al-Fajri v2.3.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.3.3 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js
  *
  * CHANGELOG:
- *  v2.3.2 (2026-04-15):
- *   - Revert k-search: hMonth-1 (new moon occurs in PREVIOUS Hijri month)
- *   - Fix predGreg/predWtn: use jdG(predJD+1.5) — awal bulan = hari SETELAH pengamatan
- *     (Islamic day starts at sunset; first Gregorian date = next calendar day)
- *   - Keep v2.3.1 fixes: Nurul Hilal, Umur Hilal via JD, ARCV with solar refraction
+ *  v2.3.3 (2026-04-15):
+ *   - Fix DOM IDs (inpHY -> hilalYear, btnCH, dll) causing crashes
+ *   - Remove duplicate const (HM, DAY_ID, PASARAN, weton) to prevent SyntaxError
  */
 'use strict';
 
 // ── Konstanta Kriteria Visibilitas ─────────────────────
 const ODEH_ZONE = [
   { qMin:-0.293, qMax:9, lbl:'A (Terlihat Mata Biasa)' },
-  { qMin:-0.293, qMax:9, lbl:'A' },   // placeholder
+  { qMin:-0.293, qMax:9, lbl:'A' },
   { qMin: 0.216, qMax:9, lbl:'B (Dengan Alat Bantu)' },
   { qMin: 0.216, qMax:9, lbl:'B' },
   { qMin: 8.0,   qMax:9, lbl:'C (Tidak Terlihat)' }
@@ -59,7 +57,6 @@ function calcMoonSet(jdMid, lat, lng, tz, elev) {
   return bestJD;
 }
 
-// ── Newton–Raphson: cari JDE ijtima ───────────────────
 function newMoonJDE(k) {
   const T = k / 1236.85;
   const T2 = T*T, T3 = T2*T, T4 = T3*T;
@@ -104,29 +101,24 @@ function newMoonJDE(k) {
   return J + corr + addCorr;
 }
 
-// ── Refraksi & koreksi sudut ──────────────────────────
 function refraction(alt) {
   if (alt < -0.5) return 0;
   return (1.02 / Math.tan((alt + 10.3/(alt+5.11)) * D2R)) / 60;
 }
 function horizDip(elev) { return 1.76 * Math.sqrt(elev||0) / 60; }
 
-// ── Kriteria Odeh (q parameter) ──────────────────────
 function odehQ(W, ARCV) {
   return ARCV - (6.4160 - 0.7319*W + 0.1018*W*W - 0.0038*W*W*W);
 }
 
-// ── Kriteria Yallop (q parameter) ────────────────────
 function yallopQ(W, ARCV) {
   return (ARCV - (11.8371 - 6.3226*W + 0.7319*W*W - 0.1018*W*W*W)) / 10;
 }
 
-// ── kFromYM: k awal (Chapront) ────────────────────────
 function kFromYM(yr, mo) {
   return Math.round((yr + (mo-1)/12 - 2000) * 12.3685);
 }
 
-// ── deltaT (Espenak-Meeus approx) ────────────────────
 function deltaT_s(year) {
   const t = year - 2000;
   if (year < 2050) return 62.92 + 0.32217*t + 0.005589*t*t;
@@ -134,9 +126,7 @@ function deltaT_s(year) {
   return -20 + 32*u*u;
 }
 
-// ── Utama: hitung satu bulan hilal ───────────────────
 function calcHilal(hYear, hMonth, lat, lng, tz, elev) {
-  // --- Langkah 1: cari approxGreg & k terbaik ---
   const approxGreg = jdG(hijriToJD(hYear, hMonth, 1) - 15);
   let bestK = kFromYM(approxGreg.year, approxGreg.month);
   let bestDiff = 99;
@@ -144,57 +134,45 @@ function calcHilal(hYear, hMonth, lat, lng, tz, elev) {
   for (let dk = -1; dk <= 2; dk++) {
     const jde = newMoonJDE(bestK + dk);
     const h   = jdToHijri(jde);
-    // Ijtima (new moon) terjadi di BULAN SEBELUMNYA (hMonth-1)
-    // Itulah mengapa kita bandingkan dengan hMonth-1, bukan hMonth.
+    // Ijtima di bulan sebelumnya
     const diff = Math.abs((h.year - hYear)*12 + (h.month - (hMonth - 1)));
     if (diff < bestDiff) { bestDiff = diff; bestK = bestK + dk; }
   }
 
-  // --- Langkah 2: ijtima ---
   const jdeTDT  = newMoonJDE(bestK);
   const dT_s    = deltaT_s(approxGreg.year);
-  const jdIjtima = jdeTDT - dT_s / 86400;          // TDT → UT
+  const jdIjtima = jdeTDT - dT_s / 86400;
   const gregI    = jdG(jdIjtima);
   const gregI2   = { year: gregI.year, month: gregI.month, day: gregI.day };
   const hijI     = jdToHijri(jdIjtima);
 
-  // --- Langkah 3: tentukan hari pengamatan (obsJD) ---
   const obsBase = jd(gregI2.year, gregI2.month, gregI2.day);
   const ss0     = calcSunSet(obsBase, lat, lng, tz, elev);
-  // Jika ijtima SETELAH sunset → pengamatan besok
   const obsJD   = (ss0 && jdIjtima > ss0) ? obsBase + 1 : obsBase;
 
   const jdSunset = calcSunSet(obsJD, lat, lng, tz, elev);
   if (!jdSunset) return null;
 
   const sunsetLT = lt(jdSunset);
-
-  // --- Langkah 4: posisi Matahari & Bulan saat Matahari terbenam ---
   const jdObs   = jdSunset;
   const sunD    = sunPos(jdObs);
   const moonD   = moonPos(jdObs);
   const topoM   = topoCorrect(moonD, jdObs, lat, lng, elev);
 
-  // Elongasi geosentrik (sudut pisah Matahari-Bulan)
   const elong = acos(
     sin(sunD.Dec)*sin(moonD.Dec) +
     cos(sunD.Dec)*cos(moonD.Dec)*cos(moonD.RA - sunD.RA)
   );
 
-  // Semidiameter & lebar sabit
-  const SD_arcsec   = moonD.SD * 3600;          // SD bulan dalam arcsec
-  const W_arcsec    = SD_arcsec * (1 - cos(elong)); // lebar sabit (Meeus)
-  const nurul       = W_arcsec / (2 * SD_arcsec);   // FIX: nurul hilal = W/2r
+  const SD_arcsec   = moonD.SD * 3600;
+  const W_arcsec    = SD_arcsec * (1 - cos(elong));
+  const nurul       = W_arcsec / (2 * SD_arcsec);
   const W_arcmin    = W_arcsec / 60;
 
-  // Ketinggian Bulan toposentrik (termasuk refraksi)
   const altMoonApp  = topoM.alt + refraction(topoM.alt) + horizDip(elev);
-  // Ketinggian Matahari semu (negatif saat terbenam)
   const altSunApp   = sunD.alt !== undefined ? (sunD.alt||0) : 0;
 
-  // ARCV = Arc of Vision = beda tinggi Bulan-Matahari (koreksi refraksi matahari)
   const ARCV  = altMoonApp - altSunApp;
-  // DAZ = perbedaan azimuth Matahari-Bulan
   const DAZ   = acos(
     (sin(topoM.alt) - sin(lat)*sin(moonD.Dec)) / (cos(lat)*cos(moonD.Dec))
   ) - acos(
@@ -204,16 +182,11 @@ function calcHilal(hYear, hMonth, lat, lng, tz, elev) {
   const qOdeh  = odehQ(W_arcmin, ARCV);
   const qYall  = yallopQ(W_arcmin, ARCV);
 
-  // --- Langkah 5: umur hilal (JD-based, lintas hari aman) ---
-  // FIX: gunakan selisih JD, bukan selisih waktu lokal
   const umurHilalH = (jdSunset - jdIjtima) * 24;
 
-  // --- Langkah 6: moonset ---
   const moonSetJD = calcMoonSet(obsJD, lat, lng, tz, elev);
   const moonSetLT = moonSetJD ? lt(moonSetJD) : null;
 
-  // --- Langkah 7: prediksi hari pertama (IRNU: alt>3° & elong>6.4°) ---
-  // FIX: tmar = ketinggian toposentrik bulan (sudah termasuk refraksi + dip)
   let predJD = null;
   for (let d = 0; d <= 4; d++) {
     const to = obsJD + d;
@@ -226,15 +199,13 @@ function calcHilal(hYear, hMonth, lat, lng, tz, elev) {
       sin(tsun.Dec)*sin(tmh.dec||moonPos(ts).Dec) +
       cos(tsun.Dec)*cos(tmh.dec||moonPos(ts).Dec)*cos((tmh.ra||moonPos(ts).RA)-tsun.RA)
     );
+    // Kriteria MABIMS IRNU: Mar'i > 3, Elongasi > 6.4
     if (tmar >= 3.0 && telG >= 6.4) { predJD = to; break; }
     if (d >= 3 && !predJD) predJD = to + 1;
   }
 
-  // FIX: predGreg = hari SETELAH pengamatan (awal bulan Hijri mulai sore hari rukyat,
-  //      sehingga tanggal Gregorian pertama = keesokan harinya)
   const predGreg = predJD ? jdG(predJD + 1.5) : null;
   const predWtn  = predJD ? weton(predJD + 1.5) : '—';
-
   const obsGreg  = jdG(obsJD + 0.5);
   const wetonObs = weton(obsJD + 0.5);
 
@@ -255,25 +226,15 @@ function calcHilal(hYear, hMonth, lat, lng, tz, elev) {
   };
 }
 
-// ── Render Weton (helper) ─────────────────────────────
-const DAY_ID   = ['Ahad','Senin','Selasa','Rabu','Kamis','Jum\'at','Sabtu'];
-const PASARAN  = ['Legi','Pahing','Pon','Wage','Kliwon'];
-function weton(jdUT) {
-  const g   = jdG(jdUT);
-  const dow = new Date(g.year, g.month-1, g.day).getDay();
-  const p   = ((Math.floor(jdUT+0.5)+2)%5+5)%5;
-  return `${DAY_ID[dow]} ${PASARAN[p]}`;
-}
-
-// ── Format output laporan ─────────────────────────────
 const MON3 = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-const HM   = ['Muharram','Shafar','Rabi\'ul Awwal','Rabi\'ul Akhir',
-              'Jumadal Ula','Jumadal Akhirah','Rajab','Sya\'ban',
-              'Ramadan','Syawal','Dzulqa\'dah','Dzulhijjah'];
 const HM_QMOJI = ['☽','☽','🌸','🌸','🌿','🌿','✨','🌙','🌙','🎉','📅','🕌'];
 
 function renderHilalReport(r) {
-  if (!r) { document.getElementById('hilalOut').innerHTML='<p style="color:#c77">Terjadi kesalahan kalkulasi.</p>'; return; }
+  if (!r) { document.getElementById('hilalOut').innerHTML='<p style="color:#c77">Terjadi kesalahan perhitungan.</p>'; return; }
+
+  // Sembunyikan bagian cards sebelumnya jika ada
+  const dc = document.getElementById('hilalCritDiv');
+  if (dc) dc.style.display = 'none';
 
   const fmtG = g => g ? `${g.day} ${MON3[g.month-1]} ${g.year}` : '—';
   const fmtGLong = g => g ? new Date(g.year,g.month-1,g.day)
@@ -284,13 +245,11 @@ function renderHilalReport(r) {
   const sunsetStr  = fmtHM(r.sunsetLT);
   const moonSetStr = r.moonSetLT ? fmtHM(r.moonSetLT) : '—';
 
-  // Label Kriteria Odeh
   let odehLabel = '—';
-  if (r.qOdeh >= 0.216)       odehLabel='<span style="color:#4c9">A — Terlihat Mata Biasa</span>';
-  else if (r.qOdeh >= -0.014) odehLabel='<span style="color:#9c6">B — Mungkin Dg Alat Bantu</span>';
+  if (r.qOdeh >= 0.216)       odehLabel='<span style="color:#4c9">A — Mudah Terlihat</span>';
+  else if (r.qOdeh >= -0.014) odehLabel='<span style="color:#9c6">B — Perlu Alat Bantu</span>';
   else                         odehLabel='<span style="color:#c66">C — Tidak Terlihat</span>';
 
-  // Label Kriteria Yallop
   let yallLabel = '—';
   const yZones = [
     {min:0.216, lbl:'<span style="color:#4c9">A — Mudah Terlihat</span>'},
@@ -354,16 +313,22 @@ function renderHilalReport(r) {
         <td>${r.qYall.toFixed(4)} — ${yallLabel}</td></tr>
 
     <tr><th colspan="2" class="hi-sect">📅 Prediksi Awal Bulan</th></tr>
-    <tr><td>Prediksi Kri. IRNU</td>
+    <tr><td>Prediksi MABIMS (IRNU)</td>
         <td style="color:var(--gold1);font-weight:700">${pred}</td></tr>
   </table>`;
 }
 
-// ── UI: hitung dan render ─────────────────────────────
+// ── UI: Entry Point ─────────────────────────────────────
 function doCalcHilal() {
-  const hY  = parseInt(document.getElementById('inpHY').value)  || 1447;
-  const hM  = parseInt(document.getElementById('inpHM').value)  || 1;
+  const yInp = document.getElementById('hilalYear');
+  const mInp = document.getElementById('hilalMonth');
+  if (!yInp || !mInp) return;
+
+  const hY  = parseInt(yInp.value) || 1447;
+  const hM  = parseInt(mInp.value) || 1;
   const res = calcHilal(hY, hM, LAT, LNG, TZ, ELEV);
   renderHilalReport(res);
 }
-document.getElementById('btnHilal').addEventListener('click', doCalcHilal);
+
+const bCH = document.getElementById('btnCH');
+if (bCH) bCH.addEventListener('click', doCalcHilal);
