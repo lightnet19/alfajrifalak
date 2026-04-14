@@ -1,6 +1,6 @@
 /**
  * main.js — State global, init, tab, GPS, bintang
- * Al-Fajri v2.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.3.2 | Lembaga Falakiyah PCNU Kencong
  * HARUS dimuat TERAKHIR setelah semua modul lain.
  */
 'use strict';
@@ -54,21 +54,25 @@ function applyLoc() {
 document.getElementById('btnCalc').addEventListener('click', applyLoc);
 
 // ── GPS ────────────────────────────────────────────────
-// FIX: Gunakan timezone device, BUKAN Math.round(lng/15)
-// Math.round(113.4/15) = 8, tapi WIB adalah UTC+7.
-// -new Date().getTimezoneOffset()/60 selalu memberikan nilai yang benar.
+// FIX v2.3.1: Gunakan timezone device, BUKAN Math.round(lng/15)
+// FIX v2.3.2: Juga update ELEV dari coords.altitude jika tersedia
 document.getElementById('btnGPS').addEventListener('click', () => {
   if (!navigator.geolocation) { alert('GPS tidak tersedia'); return; }
   document.getElementById('locSt').textContent = '📡 Mendeteksi...';
   navigator.geolocation.getCurrentPosition(pos => {
-    LAT = pos.coords.latitude;
-    LNG = pos.coords.longitude;
-    TZ  = -new Date().getTimezoneOffset() / 60;   // timezone perangkat yang benar
+    LAT  = pos.coords.latitude;
+    LNG  = pos.coords.longitude;
+    TZ   = -new Date().getTimezoneOffset() / 60;  // timezone perangkat yang benar
+    // FIX: update elevasi dari GPS jika tersedia (browser HTML5 Geolocation API)
+    if (pos.coords.altitude != null) {
+      ELEV = Math.max(0, Math.round(pos.coords.altitude));
+      document.getElementById('inpElev').value = ELEV;
+    }
     document.getElementById('inpLat').value  = LAT.toFixed(6);
     document.getElementById('inpLng').value  = LNG.toFixed(6);
     document.getElementById('inpTZ').value   = TZ;
     document.getElementById('locSt').textContent =
-      `📍 GPS: ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`;
+      `📍 GPS: ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ} | Elev: ${ELEV}m`;
     renderAll();
   }, err => {
     document.getElementById('locSt').textContent = `❌ GPS gagal: ${err.message}`;

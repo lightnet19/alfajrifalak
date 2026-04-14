@@ -1,7 +1,12 @@
 /**
  * prayer.js — Kalkulasi Waktu Sholat (Metode Kemenag: Fajr 20°, Isya 18°)
- * Al-Fajri v2.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.3.2 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js
+ *
+ * CHANGELOG:
+ *  v2.3.2 (2026-04-15):
+ *   - Tambah waktu Dhuha (ketinggian matahari +4.5°)
+ *   - Tambah render Dhuha di renderPrayer() antara Syuruq dan Dzuhur
  */
 'use strict';
 
@@ -22,14 +27,20 @@ function prayerTimes(year, month, day, lat, lng, tz, elev) {
     return Math.abs(c) > 1 ? null : acos(c) / 15;     // jam
   }
   // Ashar Syafi'i: panjang bayangan = 1× tinggi benda
-  // alt_ashr = arctan(1 / (tan(|lat - dec|) + 1))
   const ashrAlt = Math.atan(1 / (Math.tan(Math.abs(lat - sun.Dec) * D2R) + 1)) * R2D;
 
-  const fajr   = ha(-20), syuruq = ha(-ec), maghrib = ha(-ec), isya = ha(-18), ashr = ha(ashrAlt);
+  const fajr    = ha(-20);
+  const syuruq  = ha(-ec);
+  const dhuha   = ha(4.5);   // Dhuha: matahari setinggi +4.5° (waktu masuk dhuha)
+  const maghrib = ha(-ec);
+  const isya    = ha(-18);
+  const ashr    = ha(ashrAlt);
+
   return {
     imsak  : fajr    ? fmtHM(noon - fajr    - 1/6) : '—',
     fajr   : fajr    ? fmtHM(noon - fajr)           : '—',
     syuruq : syuruq  ? fmtHM(noon - syuruq)         : '—',
+    dhuha  : dhuha   ? fmtHM(noon - dhuha)           : '—',
     dhuhr  : fmtHM(noon + 0.03),
     ashr   : ashr    ? fmtHM(noon + ashr)            : '—',
     maghrib: maghrib ? fmtHM(noon + maghrib)          : '—',
@@ -51,6 +62,7 @@ function renderPrayer() {
     { name:'Imsak',   ar:'إمساك',      t: p.imsak   },
     { name:'Subuh',   ar:'الصُّبح',    t: p.fajr    },
     { name:'Syuruq',  ar:'الشُّرُوق', t: p.syuruq  },
+    { name:'Dhuha',   ar:'الضُّحى',   t: p.dhuha   },
     { name:'Dzuhur',  ar:'الظُّهر',    t: p.dhuhr   },
     { name:'Ashar',   ar:'الْعَصر',    t: p.ashr    },
     { name:'Maghrib', ar:'الْمَغرِب',  t: p.maghrib },
@@ -66,7 +78,8 @@ function renderPrayer() {
   for (let i = 0; i < mins.length; i++) if (mins[i] !== -1 && mins[i] <= nowMin) cur = i;
 
   document.getElementById('prayerGrid').innerHTML = prayers.map((pr, i) =>
-    `<div class="pi ${i===cur?'now':''}">
+    `<div class="pi ${i===cur?'now':''}"
+       ${pr.name==='Dhuha'?'title="Waktu masuk Dhuha (matahari +4.5°)"':''}>
       <div class="pi-name">${pr.name}</div>
       <div class="pi-ar">${pr.ar}</div>
       <div class="pi-time">${pr.t}</div>
@@ -103,7 +116,8 @@ function tickCountdown() {
     if (d <= 0) d += 86400;   // sudah lewat → hitung ke besok
     if (d < mn) { mn = d; ni = i; }
   }
-  const hh = Math.floor(mn/3600), mm = Math.floor((mn%3600)/60), ss = mn%60;
+
+const hh = Math.floor(mn/3600), mm = Math.floor((mn%3600)/60), ss = mn%60;
   document.getElementById('cdVal').textContent  = `${pZ(hh)}:${pZ(mm)}:${pZ(ss)}`;
   document.getElementById('cdNext').textContent = `Menuju ${p5[ni].n} (${p5[ni].t})`;
 }

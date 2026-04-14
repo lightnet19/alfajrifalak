@@ -1,7 +1,11 @@
 /**
  * ui.js — Render semua panel: Hijri, Bulan, Kiblat, Konversi, Imsakiyah, Ephemeris
- * Al-Fajri v2.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.3.2 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js, prayer.js
+ *
+ * CHANGELOG:
+ *  v2.3.2 (2026-04-15):
+ *   - Tambah kolom Dhuha ke tabel Imsakiyah
  */
 'use strict';
 
@@ -80,7 +84,8 @@ function _drawMoon(canvas, p) {
   } else {
     const p2=p-.5, xt=cx+r*(1-4*p2)*(p2<0.25?-1:1);
     ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI/2,-Math.PI/2);
-    ctx.bezierCurveTo(xt,cy-r,xt,cy+r,cx,cy+r); ctx.closePath();
+
+ctx.bezierCurveTo(xt,cy-r,xt,cy+r,cx,cy+r); ctx.closePath();
     ctx.fillStyle=g; ctx.fill();
   }
   ctx.restore();
@@ -144,15 +149,16 @@ function renderImsakiyah() {
   document.getElementById('imsakTtl').textContent = now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
   document.getElementById('imsakSub').textContent =
     `${HM[hFirst.month-1]} ${hFirst.year} H | ${document.getElementById('inpMarkaz').value}`;
+  // Kolom: Tgl | Hijri | Imsak | Subuh | Syuruq | Dhuha | Dzuhur | Ashar | Maghrib | Isya
   let html = `<thead><tr><th class="kc">Tgl</th><th class="kc">Hijri</th>`+
-             `<th>Imsak</th><th>Subuh</th><th>Syuruq</th><th>Dzuhur</th>`+
+             `<th>Imsak</th><th>Subuh</th><th>Syuruq</th><th>Dhuha</th><th>Dzuhur</th>`+
              `<th>Ashar</th><th>Maghrib</th><th>Isya</th></tr></thead><tbody>`;
   for (let day = 1; day <= dInMonth; day++) {
     const p = prayerTimes(y, mo, day, LAT, LNG, TZ, ELEV);
     const h = jdToHijri(jd(y, mo, day));
     html += `<tr class="${day===now.getDate()?'today-row':''}">`+
       `<td class="kc">${pZ(day)}/${pZ(mo)}</td><td class="kc">${h.day} ${HM[h.month-1].slice(0,5)}</td>`+
-      `<td>${p.imsak}</td><td>${p.fajr}</td><td>${p.syuruq}</td>`+
+      `<td>${p.imsak}</td><td>${p.fajr}</td><td>${p.syuruq}</td><td>${p.dhuha}</td>`+
       `<td>${p.dhuhr}</td><td>${p.ashr}</td><td>${p.maghrib}</td><td>${p.isya}</td></tr>`;
   }
   document.getElementById('imsakTable').innerHTML = html + '</tbody>';

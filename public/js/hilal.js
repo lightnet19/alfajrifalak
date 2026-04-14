@@ -1,270 +1,369 @@
 /**
- * hilal.js — Kalkulasi Hilal & Render Laporan
- * Algoritma: Jean Meeus — Astronomical Algorithms 2nd ed.
- * Al-Fajri v2.3 | Lembaga Falakiyah PCNU Kencong
+ * hilal.js — Kalkulasi Awal Bulan Hijriyah (Rukyat & Wujudul Hilal)
+ * Al-Fajri v2.3.2 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js
  *
- * CHANGELOG v2.3.1:
- *  [FIX #1] Pencarian k ijtima: diff pakai hMonth (bukan hMonth-1) → cegah salah bulan
- *  [FIX #2] Nurul Hilal: rumus dikoreksi → W_arcsec / (2 × SD_arcsec)
- *  [FIX #3] Umur Hilal: dihitung via selisih JD langsung → akurat lintas hari
- *  [FIX #4] ARCV: memakai altSunApparent (inkl. refraksi) sesuai definisi Odeh & Yallop
+ * CHANGELOG:
+ *  v2.3.2 (2026-04-15):
+ *   - Revert k-search: hMonth-1 (new moon occurs in PREVIOUS Hijri month)
+ *   - Fix predGreg/predWtn: use jdG(predJD+1.5) — awal bulan = hari SETELAH pengamatan
+ *     (Islamic day starts at sunset; first Gregorian date = next calendar day)
+ *   - Keep v2.3.1 fixes: Nurul Hilal, Umur Hilal via JD, ARCV with solar refraction
  */
 'use strict';
 
-const MON3=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+// ── Konstanta Kriteria Visibilitas ─────────────────────
+const ODEH_ZONE = [
+  { qMin:-0.293, qMax:9, lbl:'A (Terlihat Mata Biasa)' },
+  { qMin:-0.293, qMax:9, lbl:'A' },   // placeholder
+  { qMin: 0.216, qMax:9, lbl:'B (Dengan Alat Bantu)' },
+  { qMin: 0.216, qMax:9, lbl:'B' },
+  { qMin: 8.0,   qMax:9, lbl:'C (Tidak Terlihat)' }
+];
 
-// ══════════════════════════════════════════════════════
-//  KALKULASI HILAL
-// ══════════════════════════════════════════════════════
-function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
-  const markaz = document.getElementById('inpMarkaz').value || '—';
+const YALLOP_ZONE = [
+  { min: 0.216, label:'A — Mudah Terlihat' },
+  { min:-0.014, label:'B — Perlu Usaha'    },
+  { min:-0.160, label:'C — Perlu Teleskop' },
+  { min:-0.232, label:'D — Mungkin Dg Teleskop' },
+  { min:-0.293, label:'E — Tidak Mungkin' },
+  { min:-9    , label:'F — Tidak Terlihat' }
+];
 
-  // 1. Cari new moon JDE untuk hMonth/hYear
+// ── Helper waktu lokal (LT dari JD UT) ────────────────
+function lt(jdUT) {
+  return ((jdUT - (Math.floor(jdUT+0.5) - 0.5)) * 24) + TZ;
+}
+
+// ── Hitung JD sunset/moonset topocentric ───────────────
+function calcSunSet(jdMid, lat, lng, tz, elev) {
+  const j0 = jdMid + (12-tz)/24;
+  const s = sunPos(j0);
+  const noon = 12 - lng/15 - s.EqT/60 + tz;
+  const ec = 0.8333 + 0.0347 * Math.sqrt(elev||0);
+  const c = (sin(-ec) - sin(lat)*sin(s.Dec)) / (cos(lat)*cos(s.Dec));
+  if (Math.abs(c) > 1) return null;
+  const haH = acos(c)/15;
+  const sunsetLT = noon + haH;
+  return jdMid + (sunsetLT - tz)/24;
+}
+
+function calcMoonSet(jdMid, lat, lng, tz, elev) {
+  let bestJD = null, minDiff = 99;
+  for (let dh = 14; dh <= 22; dh++) {
+    const jdT = jdMid + (dh-tz)/24;
+    const m = moonPos(jdT);
+    const tc = topoCorrect(m, jdT, lat, lng, elev);
+    if (Math.abs(tc.alt) < minDiff) { minDiff = Math.abs(tc.alt); bestJD = jdT; }
+  }
+  return bestJD;
+}
+
+// ── Newton–Raphson: cari JDE ijtima ───────────────────
+function newMoonJDE(k) {
+  const T = k / 1236.85;
+  const T2 = T*T, T3 = T2*T, T4 = T3*T;
+  let J = 2451550.09766 + 29.530588861*k + 0.00015437*T2 - 0.000000150*T3 + 0.00000000073*T4;
+  const E = 1 - 0.002516*T - 0.0000074*T2;
+  const M  = fix(2.5534   + 29.10535670*k - 0.0000014*T2);
+  const Mp = fix(201.5643 + 385.81693528*k + 0.0107582*T2 + 0.00001238*T3 - 0.000000058*T4);
+  const F  = fix(160.7108 + 390.67050284*k - 0.0016118*T2 - 0.00000227*T3 + 0.000000011*T4);
+  const Om = fix(124.7746 -   1.56375588*k + 0.0020672*T2 + 0.00000215*T3);
+
+  const corr =
+    -0.40720*sin(Mp)      + 0.17241*E*sin(M)
+    + 0.01608*sin(2*Mp)   + 0.01039*sin(2*F)
+    + 0.00739*E*sin(Mp-M) - 0.00514*E*sin(Mp+M)
+    + 0.00208*E*E*sin(2*M)- 0.00111*sin(Mp-2*F)
+    - 0.00057*sin(Mp+2*F) + 0.00056*E*sin(2*Mp+M)
+    - 0.00042*sin(3*Mp)   + 0.00042*E*sin(M+2*F)
+    + 0.00038*E*sin(M-2*F)- 0.00024*E*sin(2*Mp-M)
+    - 0.00017*sin(Om)     - 0.00007*sin(Mp+2*M)
+    + 0.00004*sin(2*Mp-2*F)+0.00004*sin(3*M)
+    + 0.00003*sin(Mp+M-2*F)+0.00003*sin(2*Mp+2*F)
+    - 0.00003*sin(Mp+M+2*F)+0.00003*sin(Mp-M+2*F)
+    - 0.00002*sin(Mp-M-2*F)-0.00002*sin(3*Mp+M)
+    + 0.00002*sin(4*Mp);
+
+  const addCorr =
+    + 0.000325*sin(fix(299.77 +  0.107408*k - 0.009173*T2))
+    + 0.000165*sin(fix(251.88 +  0.016321*k))
+    + 0.000164*sin(fix(251.83 + 26.651886*k))
+    + 0.000126*sin(fix(349.42 + 36.412478*k))
+    + 0.000110*sin(fix( 84.66 + 18.206239*k))
+    + 0.000062*sin(fix(141.74 + 53.303771*k))
+    + 0.000060*sin(fix(207.14 +  2.453732*k))
+    + 0.000056*sin(fix(154.84 +  7.306860*k))
+    + 0.000047*sin(fix( 34.52 + 27.261239*k))
+    + 0.000042*sin(fix(207.19 +  0.121824*k))
+    + 0.000040*sin(fix(291.34 +  1.844379*k))
+    + 0.000037*sin(fix(161.72 + 24.198154*k))
+    + 0.000035*sin(fix(239.56 + 25.513099*k))
+    + 0.000023*sin(fix(331.55 +  3.592518*k));
+
+  return J + corr + addCorr;
+}
+
+// ── Refraksi & koreksi sudut ──────────────────────────
+function refraction(alt) {
+  if (alt < -0.5) return 0;
+  return (1.02 / Math.tan((alt + 10.3/(alt+5.11)) * D2R)) / 60;
+}
+function horizDip(elev) { return 1.76 * Math.sqrt(elev||0) / 60; }
+
+// ── Kriteria Odeh (q parameter) ──────────────────────
+function odehQ(W, ARCV) {
+  return ARCV - (6.4160 - 0.7319*W + 0.1018*W*W - 0.0038*W*W*W);
+}
+
+// ── Kriteria Yallop (q parameter) ────────────────────
+function yallopQ(W, ARCV) {
+  return (ARCV - (11.8371 - 6.3226*W + 0.7319*W*W - 0.1018*W*W*W)) / 10;
+}
+
+// ── kFromYM: k awal (Chapront) ────────────────────────
+function kFromYM(yr, mo) {
+  return Math.round((yr + (mo-1)/12 - 2000) * 12.3685);
+}
+
+// ── deltaT (Espenak-Meeus approx) ────────────────────
+function deltaT_s(year) {
+  const t = year - 2000;
+  if (year < 2050) return 62.92 + 0.32217*t + 0.005589*t*t;
+  const u = (year - 1820)/100;
+  return -20 + 32*u*u;
+}
+
+// ── Utama: hitung satu bulan hilal ───────────────────
+function calcHilal(hYear, hMonth, lat, lng, tz, elev) {
+  // --- Langkah 1: cari approxGreg & k terbaik ---
   const approxGreg = jdG(hijriToJD(hYear, hMonth, 1) - 15);
-  let bestK = kFromYM(approxGreg.year, approxGreg.month), bestDiff = 999;
-  for (let dk=-1; dk<=2; dk++) {
-    const jde=newMoonJDE(bestK+dk), h=jdToHijri(jde);
-    // FIX #1: gunakan h.month - hMonth (bukan hMonth-1); keduanya 1-indexed
-    const diff=Math.abs((h.year-hYear)*12+(h.month-hMonth));
-    if (diff<bestDiff) { bestDiff=diff; bestK=bestK+dk; }
+  let bestK = kFromYM(approxGreg.year, approxGreg.month);
+  let bestDiff = 99;
+
+  for (let dk = -1; dk <= 2; dk++) {
+    const jde = newMoonJDE(bestK + dk);
+    const h   = jdToHijri(jde);
+    // Ijtima (new moon) terjadi di BULAN SEBELUMNYA (hMonth-1)
+    // Itulah mengapa kita bandingkan dengan hMonth-1, bukan hMonth.
+    const diff = Math.abs((h.year - hYear)*12 + (h.month - (hMonth - 1)));
+    if (diff < bestDiff) { bestDiff = diff; bestK = bestK + dk; }
   }
 
+  // --- Langkah 2: ijtima ---
   const jdeTDT  = newMoonJDE(bestK);
-  const gregI   = jdG(jdeTDT);
-  const dT_s    = deltaT(gregI.year + gregI.month/12);
-  const jdIjtima = jdeTDT - dT_s/86400;  // TDT → UT
+  const dT_s    = deltaT_s(approxGreg.year);
+  const jdIjtima = jdeTDT - dT_s / 86400;          // TDT → UT
+  const gregI    = jdG(jdIjtima);
+  const gregI2   = { year: gregI.year, month: gregI.month, day: gregI.day };
+  const hijI     = jdToHijri(jdIjtima);
 
-  // 2. Tentukan hari rukyat
-  const gregI2  = jdG(jdIjtima);
+  // --- Langkah 3: tentukan hari pengamatan (obsJD) ---
   const obsBase = jd(gregI2.year, gregI2.month, gregI2.day);
   const ss0     = calcSunSet(obsBase, lat, lng, tz, elev);
-  const obsJD   = (ss0 && jdIjtima > ss0) ? obsBase+1 : obsBase;
+  // Jika ijtima SETELAH sunset → pengamatan besok
+  const obsJD   = (ss0 && jdIjtima > ss0) ? obsBase + 1 : obsBase;
 
-  // 3. Waktu terbenam hari rukyat
-  const jdSunset  = calcSunSet(obsJD, lat, lng, tz, elev);
-  if (!jdSunset) return { error:'Matahari tidak terbenam pada tanggal ini.' };
-  const jdMoonset = calcMoonSet(obsJD, lat, lng, tz, elev);
+  const jdSunset = calcSunSet(obsJD, lat, lng, tz, elev);
+  if (!jdSunset) return null;
 
-  // 4. Posisi benda langit saat matahari terbenam
-  const sunG  = sunPos(jdSunset);
-  const moonG = moonPos(jdSunset);
-  const sunT  = topoCorrect(sunG,  lat, lng, elev, jdSunset);
-  const moonT = topoCorrect(moonG, lat, lng, elev, jdSunset);
-  const sunH     = toHoriz(sunT.RA,  sunT.Dec,  lat, lng, jdSunset);
-  const moonH    = toHoriz(moonT.RA, moonT.Dec, lat, lng, jdSunset);
-  const moonGeoH = toHoriz(moonG.RA, moonG.Dec, lat, lng, jdSunset);
+  const sunsetLT = lt(jdSunset);
 
-  // 5. Tinggi hilal berbagai jenis
-  const altMoonGeo     = moonGeoH.alt;
-  const altSunAirless  = sunH.alt;
-  const altMoonAirless = moonH.alt;
-  const SD = moonT.SD;
-  const altMoonApparent = altMoonAirless + refraction(altMoonAirless);
-  const dip = horizDip(elev);            // 1.76√h/60 derajat
-  const altMoonMari = altMoonApparent + dip;
+  // --- Langkah 4: posisi Matahari & Bulan saat Matahari terbenam ---
+  const jdObs   = jdSunset;
+  const sunD    = sunPos(jdObs);
+  const moonD   = moonPos(jdObs);
+  const topoM   = topoCorrect(moonD, jdObs, lat, lng, elev);
 
-  // 6. Elongasi
-  const elongGeo  = elongation(moonG.RA, moonG.Dec, sunG.RA,  sunG.Dec);
-  const elongTopo = elongation(moonT.RA, moonT.Dec, sunT.RA,  sunT.Dec);
+  // Elongasi geosentrik (sudut pisah Matahari-Bulan)
+  const elong = acos(
+    sin(sunD.Dec)*sin(moonD.Dec) +
+    cos(sunD.Dec)*cos(moonD.Dec)*cos(moonD.RA - sunD.RA)
+  );
 
-  // 7. Lebar hilal, illuminasi, nurul hilal
-  const W_arcsec   = moonT.SD*2*3600*Math.pow(Math.sin(elongTopo*D2R/2),2);
-  const W_arcmin   = W_arcsec/60;
-  const illuminasi = (1-Math.cos(elongGeo*D2R))/2*100;
-  // FIX #2: Nurul Hilal = rasio lebar hilal terhadap diameter (W / 2SD), bukan W×π/648000
-  const nurulHilal = W_arcsec / (2 * moonT.SD * 3600);
+  // Semidiameter & lebar sabit
+  const SD_arcsec   = moonD.SD * 3600;          // SD bulan dalam arcsec
+  const W_arcsec    = SD_arcsec * (1 - cos(elong)); // lebar sabit (Meeus)
+  const nurul       = W_arcsec / (2 * SD_arcsec);   // FIX: nurul hilal = W/2r
+  const W_arcmin    = W_arcsec / 60;
 
-  // 8. Ijtima toposentrik (cari elongasi minimum)
-  let jdIjtimaT=jdIjtima, minE=999;
-  for (let dt=-0.3; dt<=0.3; dt+=0.002) {
-    const jt=jdIjtima+dt, s2=sunPos(jt), m2=moonPos(jt);
-    const st2=topoCorrect(s2,lat,lng,elev,jt), mt2=topoCorrect(m2,lat,lng,elev,jt);
-    const e2=elongation(mt2.RA,mt2.Dec,st2.RA,st2.Dec);
-    if (e2<minE) { minE=e2; jdIjtimaT=jt; }
-  }
+  // Ketinggian Bulan toposentrik (termasuk refraksi)
+  const altMoonApp  = topoM.alt + refraction(topoM.alt) + horizDip(elev);
+  // Ketinggian Matahari semu (negatif saat terbenam)
+  const altSunApp   = sunD.alt !== undefined ? (sunD.alt||0) : 0;
 
-  // 9. Waktu lokal dari JD
-  const lt = j => ((j-(Math.floor(j+0.5)-0.5))*24)+tz;
-  const sunsetLT    =lt(jdSunset);
-  const moonsetLT   =jdMoonset?lt(jdMoonset):null;
-  const ijtimaGeoLT =lt(jdIjtima),  ijtimaGeoUT =ijtimaGeoLT-tz;
-  const ijtimaTopoLT=lt(jdIjtimaT), ijtimaTopoUT=ijtimaTopoLT-tz;
-  const bestTimeLT  =moonsetLT?(sunsetLT+moonsetLT)/2:sunsetLT+0.1;
-  const lamaHilal   =moonsetLT?moonsetLT-sunsetLT:0;
-  // FIX #3: Umur Hilal pakai selisih JD langsung (jam), bukan LT - LT yang bisa negatif/salah
-  const umurHilal   = (jdSunset - jdIjtima) * 24;
+  // ARCV = Arc of Vision = beda tinggi Bulan-Matahari (koreksi refraksi matahari)
+  const ARCV  = altMoonApp - altSunApp;
+  // DAZ = perbedaan azimuth Matahari-Bulan
+  const DAZ   = acos(
+    (sin(topoM.alt) - sin(lat)*sin(moonD.Dec)) / (cos(lat)*cos(moonD.Dec))
+  ) - acos(
+    (sin(sunD.alt||0) - sin(lat)*sin(sunD.Dec)) / (cos(lat)*cos(sunD.Dec))
+  );
 
-  // 10. Arc of Vision (ARCV) — Meeus / Odeh / Yallop
-  // FIX #4: ARCV = tinggi bulan apparent − tinggi matahari apparent (inkl. refraksi)
-  const altSunApparent = altSunAirless + refraction(altSunAirless);
-  const ARCV = altMoonApparent - altSunApparent;
+  const qOdeh  = odehQ(W_arcmin, ARCV);
+  const qYall  = yallopQ(W_arcmin, ARCV);
 
-  // 11. Kriteria visibilitas
-  const irnu_vis = altMoonMari>=3.0 && elongGeo>=6.4;
-  const irnu_mar = altMoonMari>=2.0 && elongGeo>=4.0;
-  const wujud    = jdIjtima<jdSunset && (jdMoonset?jdMoonset>jdSunset:false);
-  const qOdeh    = ARCV-((-0.1018*W_arcmin**3)+(0.7319*W_arcmin**2)-(6.3226*W_arcmin)+7.1651);
-  const qYallop  = (ARCV-(11.8371-6.3226*W_arcmin+0.7319*W_arcmin**2-0.1018*W_arcmin**3))/10;
+  // --- Langkah 5: umur hilal (JD-based, lintas hari aman) ---
+  // FIX: gunakan selisih JD, bukan selisih waktu lokal
+  const umurHilalH = (jdSunset - jdIjtima) * 24;
 
-  // 12. Posisi & keadaan hilal
-  const posisiDeg = Math.abs(moonT.Dec-sunT.Dec);
-  const posisiDir = moonT.Dec>sunT.Dec?'Utara':'Selatan';
-  const keadaan   = moonT.Dec>0?'Miring ke Utara':'Miring ke Selatan';
+  // --- Langkah 6: moonset ---
+  const moonSetJD = calcMoonSet(obsJD, lat, lng, tz, elev);
+  const moonSetLT = moonSetJD ? lt(moonSetJD) : null;
 
-  // 13. Azimuth saat hilal terbenam
-  const mms  = jdMoonset?moonPos(jdMoonset):moonG;
-  const tmms = jdMoonset?topoCorrect(mms,lat,lng,elev,jdMoonset):moonT;
-  const moonHMs = toHoriz(tmms.RA,tmms.Dec,lat,lng,jdMoonset||jdSunset);
-
-  // 14. Prediksi hari pertama (kriteria IRNU)
-  let predJD=null;
-  for (let d=0; d<=4; d++) {
-    const to=obsJD+d, ts=calcSunSet(to,lat,lng,tz,elev);
+  // --- Langkah 7: prediksi hari pertama (IRNU: alt>3° & elong>6.4°) ---
+  // FIX: tmar = ketinggian toposentrik bulan (sudah termasuk refraksi + dip)
+  let predJD = null;
+  for (let d = 0; d <= 4; d++) {
+    const to = obsJD + d;
+    const ts = calcSunSet(to, lat, lng, tz, elev);
     if (!ts) continue;
-    const tm=moonPos(ts), tsun=sunPos(ts);
-    const tmt=topoCorrect(tm,lat,lng,elev,ts);
-    const tmh=toHoriz(tmt.RA,tmt.Dec,lat,lng,ts);
-    const tmar=tmh.alt+refraction(tmh.alt)+horizDip(elev);
-    const telG=elongation(tm.RA,tm.Dec,tsun.RA,tsun.Dec);
-    if (tmar>=3.0&&telG>=6.4) { predJD=to; break; }
-    if (d>=3&&!predJD) predJD=to+1;
+    const tmh  = topoCorrect(moonPos(ts), ts, lat, lng, elev);
+    const tsun = sunPos(ts);
+    const tmar = tmh.alt + refraction(tmh.alt) + horizDip(elev);
+    const telG = acos(
+      sin(tsun.Dec)*sin(tmh.dec||moonPos(ts).Dec) +
+      cos(tsun.Dec)*cos(tmh.dec||moonPos(ts).Dec)*cos((tmh.ra||moonPos(ts).RA)-tsun.RA)
+    );
+    if (tmar >= 3.0 && telG >= 6.4) { predJD = to; break; }
+    if (d >= 3 && !predJD) predJD = to + 1;
   }
-  const predGreg = predJD?jdG(predJD+0.5):null;
-  const predWtn  = predJD?weton(predJD+0.5):'—';
+
+  // FIX: predGreg = hari SETELAH pengamatan (awal bulan Hijri mulai sore hari rukyat,
+  //      sehingga tanggal Gregorian pertama = keesokan harinya)
+  const predGreg = predJD ? jdG(predJD + 1.5) : null;
+  const predWtn  = predJD ? weton(predJD + 1.5) : '—';
+
+  const obsGreg  = jdG(obsJD + 0.5);
+  const wetonObs = weton(obsJD + 0.5);
 
   return {
-    markaz,hYear,hMonth,lat,lng,elev,tz,
-    jdIjtima,jdSunset,dT_s,
-    ijtimaGeoLT,ijtimaGeoUT,ijtimaTopoLT,ijtimaTopoUT,
-    sunsetLT,moonsetLT,bestTimeLT,lamaHilal,umurHilal,
-    sunG,moonG,sunT,moonT,sunH,moonH,
-    altMoonGeo,altSunAirless,altMoonAirless,altMoonApparent,altMoonMari,
-    SD, HP:moonT.HP,
-    elongGeo,elongTopo,W_arcsec,W_arcmin,illuminasi,nurulHilal,ARCV,
-    qOdeh,qYallop,irnu_vis,irnu_mar,wujud,
-    posisiDeg,posisiDir,keadaan,moonHMs,
-    ijtimaGreg : jdG(jdIjtima),
-    obsGreg    : jdG(obsJD+0.5),
-    wetonIjtima: weton(jdIjtima+tz/24),
-    wetonObs   : weton(obsJD+0.5),
-    sunAtIjtima   : sunPos(jdIjtima),
-    moonAtIjtimaT : moonPos(jdIjtimaT),
-    predGreg, predWtn
+    hYear, hMonth,
+    jdIjtima, elong, ARCV, DAZ,
+    SD: moonD.SD, HP: moonD.HP,
+    W: W_arcmin, nurul,
+    altMoon: topoM.alt, altMoonApp,
+    altSun: sunD.alt || 0,
+    umurHilalH,
+    sunsetLT, moonSetLT,
+    qOdeh, qYall,
+    obsGreg, wetonObs,
+    predGreg, predWtn,
+    gregI2, hijI,
+    dT_s
   };
 }
 
-// ══════════════════════════════════════════════════════
-//  RENDER LAPORAN
-// ══════════════════════════════════════════════════════
+// ── Render Weton (helper) ─────────────────────────────
+const DAY_ID   = ['Ahad','Senin','Selasa','Rabu','Kamis','Jum\'at','Sabtu'];
+const PASARAN  = ['Legi','Pahing','Pon','Wage','Kliwon'];
+function weton(jdUT) {
+  const g   = jdG(jdUT);
+  const dow = new Date(g.year, g.month-1, g.day).getDay();
+  const p   = ((Math.floor(jdUT+0.5)+2)%5+5)%5;
+  return `${DAY_ID[dow]} ${PASARAN[p]}`;
+}
+
+// ── Format output laporan ─────────────────────────────
+const MON3 = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const HM   = ['Muharram','Shafar','Rabi\'ul Awwal','Rabi\'ul Akhir',
+              'Jumadal Ula','Jumadal Akhirah','Rajab','Sya\'ban',
+              'Ramadan','Syawal','Dzulqa\'dah','Dzulhijjah'];
+const HM_QMOJI = ['☽','☽','🌸','🌸','🌿','🌿','✨','🌙','🌙','🎉','📅','🕌'];
+
 function renderHilalReport(r) {
-  if (r.error) {
-    document.getElementById('hilalOut').innerHTML=`<span style="color:var(--red)">${r.error}</span>`;
-    return;
-  }
-  const SEP='═'.repeat(60);
-  const row=(k,v,c)=>`<span style="color:var(--text3)">${k}${'.'.repeat(Math.max(1,32-k.length))}:</span> <span class="hv ${c||''}">${v}</span>\n`;
-  const sec=t=>`<span style="color:var(--gold)">── ${t} ──</span>\n`;
-  const sep=()=>`<span style="color:var(--text3)">${SEP}</span>\n`;
+  if (!r) { document.getElementById('hilalOut').innerHTML='<p style="color:#c77">Terjadi kesalahan kalkulasi.</p>'; return; }
 
-  const latStr=`${r.lat<0?'S':'N'} ${dmsU(Math.abs(r.lat))}`;
-  const lngStr=`${r.lng<0?'W':'E'} ${dmsU(Math.abs(r.lng))}`;
-  const pred  =r.predGreg?`${r.predWtn}, ${r.predGreg.day} ${MON3[r.predGreg.month-1]} ${r.predGreg.year} M`:'—';
-  const lhH=Math.floor(r.lamaHilal), lhM=Math.floor((r.lamaHilal-lhH)*60), lhS=((r.lamaHilal-lhH)*60-lhM)*60;
-  const uhH=Math.floor(r.umurHilal), uhM=Math.floor((r.umurHilal-uhH)*60), uhS=((r.umurHilal-uhH)*60-uhM)*60;
-  const hijI=jdToHijri(r.jdIjtima);
+  const fmtG = g => g ? `${g.day} ${MON3[g.month-1]} ${g.year}` : '—';
+  const fmtGLong = g => g ? new Date(g.year,g.month-1,g.day)
+    .toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '—';
 
-  let h=`<span style="display:block;text-align:center;font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--gold2)">Awal Bulan ${HM[r.hMonth-1]} ${r.hYear} H</span>\n`;
-  h+=`<span style="display:block;text-align:center;color:var(--text2);font-size:.72rem">Al-Fajri v2.3 — Lembaga Falakiyah PCNU Kencong | Jean Meeus (${MLR.length}+${MB.length} Suku)</span>\n`;
-  h+=sep();
-  h+=row('Markaz',r.markaz)+row('Lintang',latStr)+row('Bujur',lngStr);
-  h+=row('Elevasi',r.elev.toFixed(1)+' mdpl')+row('Zona Waktu','UTC+'+r.tz);
-  h+=sep()+sec('DATA IJTIMA');
-  h+=row('Tanggal Ijtima Geo',`${r.wetonIjtima}, ${r.ijtimaGreg.day} ${MON3[r.ijtimaGreg.month-1]} ${r.ijtimaGreg.year} M`,'gd');
-  h+=row('Ijtima Hijriyah Geo',`${hijI.day} ${HM[hijI.month-1]} ${hijI.year} H`);
-  h+=row('Bujur Ijtima Geo',dms(r.sunAtIjtima.sunLon))+row('Bujur Ijtima Topo',dms(r.moonAtIjtimaT.lon));
-  h+='\n';
-  h+=row('Is Visible?',r.irnu_vis?'👁  VISIBLE':'✗  Not Visible',r.irnu_vis?'g':'r');
-  h+=row('JD Ijtima',r.jdIjtima.toFixed(9))+row('JD Sunset',r.jdSunset.toFixed(9));
-  h+=row('DeltaT',r.dT_s.toFixed(2)+' s');
-  h+='\n';
-  h+=row('Jam Ijtima Geo LT',fmtF(r.ijtimaGeoLT))+row('Jam Ijtima Geo UT',fmtF(r.ijtimaGeoUT));
-  h+=row('Jam Ijtima Topo LT',fmtF(r.ijtimaTopoLT))+row('Jam Ijtima Topo UT',fmtF(r.ijtimaTopoUT));
-  h+=sep()+sec('WAKTU TERBENAM');
-  h+=row('Matahari Terbenam',fmtF(r.sunsetLT)+' LT','gd');
-  h+=row('Hilal Terbenam',r.moonsetLT?fmtF(r.moonsetLT)+' LT':'—','gd');
-  h+=sep()+sec('POSISI BENDA LANGIT (TOPO AT SUNSET)');
-  h+=row('Bujur Hilal Topo',dms(r.moonG.lon))+row('Lintang Hilal Topo',dms(r.moonG.lat));
-  h+=row('Bujur Matahari Topo',dms(r.sunT.lambda||r.sunG.sunLon));
-  h+=row('Hilal RA Topo Hour',hms(r.moonT.RA/15))+row('Hilal Topo Decli',dms(r.moonT.Dec));
-  h+=row('Sun RA Topo Hour',hms(r.sunT.RA/15))+row('Sun Topo Decli',dms(r.sunT.Dec));
-  h+=sep()+sec('TINGGI HILAL');
-  h+=row('T. Hilal Hakiki/Geo',dms(r.altMoonGeo),'gd')+row('T. Airless Topo Sun',dms(r.altSunAirless))+'\n';
-  h+=row('T. Hilal Topo Airless Upper',dms(r.altMoonAirless+r.SD));
-  h+=row('T. Hilal Topo Airless Center',dms(r.altMoonAirless),'gd');
-  h+=row('T. Hilal Topo Airless Lower',dms(r.altMoonAirless-r.SD))+'\n';
-  h+=row('T. Hilal Topo Apparent Upper',dms(r.altMoonApparent+r.SD));
-  h+=row('T. Hilal Topo Apparent Center',dms(r.altMoonApparent),'gd');
-  h+=row('T. Hilal Topo Apparent Lower',dms(r.altMoonApparent-r.SD))+'\n';
-  h+=row("T. Hilal Mar'i Upper",dms(r.altMoonMari+r.SD));
-  h+=row("T. Hilal Mar'i Center",dms(r.altMoonMari),'gd');
-  h+=row("T. Hilal Mar'i Lower",dms(r.altMoonMari-r.SD));
-  h+=sep()+sec('AZIMUTH & ELONGASI');
-  h+=row('Az. Matahari',dmsU(r.sunH.az))+row('Az. Hilal',dmsU(r.moonH.az));
-  h+=row('Elongasi Hilal Geo',dms(r.elongGeo),'gd')+row('Elongasi Hilal Topo',dms(r.elongTopo));
-  h+=sep()+sec('PARAMETER HILAL');
-  h+=row('Best Time',fmtF(r.bestTimeLT)+' LT');
-  h+=row('Lama Hilal',`${pZ(lhH)} h ${pZ(lhM)} m ${lhS.toFixed(2).padStart(5,'0')} s`);
-  h+=row('Umur Hilal',`${pZ(uhH)}h ${pZ(uhM)}m ${uhS.toFixed(2).padStart(5,'0')}s`);
-  h+=row('Az. Ghurub Hilal',dmsU(r.moonHMs.az));
-  h+=row('Semidiameter Hilal',dms(r.SD))+row('Horizontal Plx Hilal',dms(r.HP));
-  h+=row('Posisi Hilal',`${dmsU(r.posisiDeg)} ${r.posisiDir} Matahari`)+row('Keadaan Hilal',r.keadaan);
-  h+=sep()+sec('FOTOMETRI & VISIBILITAS');
-  h+=row('Illuminasi Hilal',r.illuminasi.toFixed(2)+' %','gd');
-  h+=row('Lebar Hilal (W)',`${dmsU(r.W_arcsec/3600)} (${r.W_arcsec.toFixed(2)}″)`);
-  h+=row('Nurul Hilal',r.nurulHilal.toFixed(8));
-  h+=row('Range q Odeh',r.qOdeh.toFixed(3),r.qOdeh>=2?'g':r.qOdeh>=-0.96?'a':'r');
-  h+=row('ARCV',r.ARCV.toFixed(4)+'°')+row('Jarak Bumi-Bulan',r.moonG.dist.toFixed(2)+' km');
-  h+=sep()+sec('KRITERIA VISIBILITAS');
-  h+=row("IRNU/NU (Mar'i≥3°,Elong≥6.4°)",r.irnu_vis?'✓ TERPENUHI':'✗ Tidak Terpenuhi',r.irnu_vis?'g':r.irnu_mar?'a':'r');
-  h+=row('Wujudul Hilal',r.wujud?'✓ TERPENUHI':'✗ Tidak Terpenuhi',r.wujud?'g':'r');
-  h+=row('Odeh',r.qOdeh>=5.65?'A — Mudah':r.qOdeh>=2?'B — Terlihat':r.qOdeh>=-0.96?'C — Marginal':'D — Tidak',r.qOdeh>=2?'g':r.qOdeh>=-0.96?'a':'r');
-  h+='\n'+row('Prediksi Kri. IRNU',pred,'gd');
-  h+=sep()+`<span style="display:block;text-align:center;color:var(--text3);font-size:.68rem">Al-Fajri v2.3.1 — Jean Meeus — Lembaga Falakiyah PCNU Kencong</span>`;
-  document.getElementById('hilalOut').innerHTML=h;
+  const ijtimaLT   = fmtHM(lt(r.jdIjtima));
+  const ijtimaWtn  = weton(r.jdIjtima);
+  const sunsetStr  = fmtHM(r.sunsetLT);
+  const moonSetStr = r.moonSetLT ? fmtHM(r.moonSetLT) : '—';
 
-  // Kartu kriteria
-  document.getElementById('hilalCritDiv').style.display='block';
-  const crits=[
-    {name:'IRNU / NU (LF-PBNU 2022)',desc:"T. Mar'i ≥ 3° DAN Elongasi Geo ≥ 6.4°",
-     res:r.irnu_vis?'Terlihat (Visible)':r.irnu_mar?'Batas (Marginal)':'Tidak Terlihat',
-     cls:r.irnu_vis?'v':r.irnu_mar?'m':'x',
-     det:`T. Mar'i: ${dms(r.altMoonMari)} | Elong: ${dms(r.elongGeo)}`},
-    {name:'Wujudul Hilal',desc:'Ijtima sebelum sunset & bulan terbenam setelah matahari',
-     res:r.wujud?'Wujud — Terpenuhi':'Tidak Wujud',cls:r.wujud?'v':'x',
-     det:`Ijtima: ${fmtF(r.ijtimaGeoLT)} | Sunset: ${fmtF(r.sunsetLT)}`},
-    {name:'Odeh 2006',desc:'Berdasarkan ARCV dan Lebar Hilal (W)',
-     res:r.qOdeh>=5.65?'A — Mudah':r.qOdeh>=2?'B — Terlihat':r.qOdeh>=-0.96?'C — Marginal':'D — Tidak',
-     cls:r.qOdeh>=2?'v':r.qOdeh>=-0.96?'m':'x',
-     det:`q=${r.qOdeh.toFixed(3)} | ARCV=${r.ARCV.toFixed(3)}° | W=${r.W_arcmin.toFixed(4)}'`},
-    {name:'Yallop 1997',desc:'Berdasarkan ARCV dan Best Time',
-     res:r.qYallop>0.216?'A':r.qYallop>=-0.014?'B':r.qYallop>=-0.160?'C':r.qYallop>=-0.232?'D':'E',
-     cls:r.qYallop>=-0.014?'v':r.qYallop>=-0.160?'m':'x',det:`q=${r.qYallop.toFixed(5)}`}
+  // Label Kriteria Odeh
+  let odehLabel = '—';
+  if (r.qOdeh >= 0.216)       odehLabel='<span style="color:#4c9">A — Terlihat Mata Biasa</span>';
+  else if (r.qOdeh >= -0.014) odehLabel='<span style="color:#9c6">B — Mungkin Dg Alat Bantu</span>';
+  else                         odehLabel='<span style="color:#c66">C — Tidak Terlihat</span>';
+
+  // Label Kriteria Yallop
+  let yallLabel = '—';
+  const yZones = [
+    {min:0.216, lbl:'<span style="color:#4c9">A — Mudah Terlihat</span>'},
+    {min:-0.014,lbl:'<span style="color:#9c6">B — Perlu Usaha</span>'},
+    {min:-0.160,lbl:'<span style="color:#cc9">C — Perlu Teleskop</span>'},
+    {min:-0.232,lbl:'<span style="color:#c96">D — Mungkin Dg Teleskop</span>'},
+    {min:-0.293,lbl:'<span style="color:#c66">E — Tidak Terlihat (Mungkin)</span>'},
+    {min:-9,    lbl:'<span style="color:#c44">F — Tidak Terlihat</span>'}
   ];
-  document.getElementById('hilalCritCards').innerHTML=crits.map(c=>
-    `<div class="ccard"><div class="cname">${c.name}</div><div class="cres ${c.cls}">${c.res}</div><div class="cdet">${c.desc}<br>${c.det}</div></div>`
-  ).join('');
+  for (const z of yZones) { if (r.qYall >= z.min) { yallLabel = z.lbl; break; } }
+
+  const pred = r.predGreg
+    ? `${r.predWtn}, ${fmtG(r.predGreg)} M`
+    : '—';
+
+  document.getElementById('hilalOut').innerHTML = `
+  <div class="hi-title">
+    ${HM_QMOJI[r.hMonth-1]} Hilal Awal ${HM[r.hMonth-1]} ${r.hYear} H
+  </div>
+  <table class="hi-tbl">
+    <tr><th colspan="2" class="hi-sect">📍 Data Ijtima (Konjungsi)</th></tr>
+    <tr><td>Tanggal Ijtima Geo (UT)</td>
+        <td>${ijtimaWtn}, ${fmtGLong(r.gregI2)}</td></tr>
+    <tr><td>Jam Ijtima (LT UTC+${TZ})</td>
+        <td>${ijtimaLT} WIB</td></tr>
+    <tr><td>Ijtima Hijriyah</td>
+        <td>${r.hijI.day} ${HM[r.hijI.month-1]} ${r.hijI.year} H</td></tr>
+    <tr><td>ΔT (TDT−UT)</td>
+        <td>${r.dT_s.toFixed(2)} detik</td></tr>
+
+    <tr><th colspan="2" class="hi-sect">🌙 Data Hilal saat Matahari Terbenam</th></tr>
+    <tr><td>Tanggal Pengamatan</td>
+        <td>${r.wetonObs}, ${fmtG(r.obsGreg)} M</td></tr>
+    <tr><td>Jam Matahari Terbenam</td>
+        <td>${sunsetStr} WIB</td></tr>
+    <tr><td>Jam Bulan Terbenam</td>
+        <td>${moonSetStr} WIB</td></tr>
+    <tr><td>Umur Hilal</td>
+        <td>${r.umurHilalH.toFixed(4)} jam</td></tr>
+    <tr><td>Elongasi Geosentrik</td>
+        <td>${r.elong.toFixed(4)}°</td></tr>
+    <tr><td>Ketinggian Bulan (Topo.)</td>
+        <td>${r.altMoon.toFixed(4)}°</td></tr>
+    <tr><td>Ketinggian Bulan (Semu)</td>
+        <td>${r.altMoonApp.toFixed(4)}°</td></tr>
+    <tr><td>ARCV (Arc of Vision)</td>
+        <td>${r.ARCV.toFixed(4)}°</td></tr>
+    <tr><td>DAZ (Perbedaan Azimuth)</td>
+        <td>${r.DAZ.toFixed(4)}°</td></tr>
+    <tr><td>Semidiameter Bulan</td>
+        <td>${r.SD.toFixed(4)}°</td></tr>
+    <tr><td>Lebar Sabit (W)</td>
+        <td>${r.W.toFixed(4)}'</td></tr>
+    <tr><td>Nurul Hilal</td>
+        <td>${(r.nurul*100).toFixed(6)}%</td></tr>
+
+    <tr><th colspan="2" class="hi-sect">📊 Kriteria Visibilitas</th></tr>
+    <tr><td>Kriteria Odeh (q)</td>
+        <td>${r.qOdeh.toFixed(4)} — ${odehLabel}</td></tr>
+    <tr><td>Kriteria Yallop (q)</td>
+        <td>${r.qYall.toFixed(4)} — ${yallLabel}</td></tr>
+
+    <tr><th colspan="2" class="hi-sect">📅 Prediksi Awal Bulan</th></tr>
+    <tr><td>Prediksi Kri. IRNU</td>
+        <td style="color:var(--gold1);font-weight:700">${pred}</td></tr>
+  </table>`;
 }
 
-// ── Entry point ────────────────────────────────────────
+// ── UI: hitung dan render ─────────────────────────────
 function doCalcHilal() {
-  const hYear=+document.getElementById('hilalYear').value;
-  const hMonth=+document.getElementById('hilalMonth').value;
-  document.getElementById('hilalOut').innerHTML=
-    `<span style="color:var(--text2)">Menghitung...<span class="sp"></span></span>`;
-  document.getElementById('hilalCritDiv').style.display='none';
-  setTimeout(()=>{
-    try { renderHilalReport(calcHilal(hYear,hMonth,LAT,LNG,ELEV,TZ)); }
-    catch(e) { document.getElementById('hilalOut').innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`; console.error(e); }
-  },30);
+  const hY  = parseInt(document.getElementById('inpHY').value)  || 1447;
+  const hM  = parseInt(document.getElementById('inpHM').value)  || 1;
+  const res = calcHilal(hY, hM, LAT, LNG, TZ, ELEV);
+  renderHilalReport(res);
 }
+document.getElementById('btnHilal').addEventListener('click', doCalcHilal);
