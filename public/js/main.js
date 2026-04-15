@@ -2,10 +2,6 @@
  * main.js — State global, init, tab, GPS, bintang
  * Al-Fajri v2.4.2 | Lembaga Falakiyah PCNU Kencong
  * HARUS dimuat TERAKHIR setelah semua modul lain.
- *
- * CHANGELOG v2.4.2:
- * - FIX GPS: Loading spinner on button, specific error messages (permission denied, timeout, etc.)
- * - FEAT GPS: Reverse geocoding via OpenStreetMap Nominatim to auto-fill markaz name
  */
 'use strict';
 
@@ -71,26 +67,22 @@ function setLocStatus(msg, type) {
 document.getElementById('btnGPS').addEventListener('click', function() {
   const btn = this;
 
-  // Cek ketersediaan API
   if (!navigator.geolocation) {
     setLocStatus('⚠ Browser ini tidak mendukung GPS/Geolokasi.', 'err');
     return;
   }
 
-  // Cek apakah halaman di-serve via HTTPS (wajib untuk GPS di browser modern)
   if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
     setLocStatus('⚠ GPS memerlukan koneksi HTTPS.', 'err');
     return;
   }
 
-  // Tampilkan loading state
   const origText = btn.textContent;
   btn.disabled = true;
   btn.innerHTML = '<span class="sp" style="border-top-color:#000;width:14px;height:14px;border-width:2px"></span>';
   setLocStatus('🔍 Mendeteksi lokasi GPS...', '');
 
   navigator.geolocation.getCurrentPosition(
-    // SUCCESS
     function(pos) {
       LAT = pos.coords.latitude;
       LNG = pos.coords.longitude;
@@ -110,14 +102,12 @@ document.getElementById('btnGPS').addEventListener('click', function() {
       btn.textContent = origText;
       renderAll();
 
-      // Reverse geocoding via Nominatim (OpenStreetMap) — tidak perlu API key
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${LAT}&lon=${LNG}&zoom=14&addressdetails=1`, {
         headers: { 'Accept-Language': 'id', 'User-Agent': 'AlFajriApp/2.4' }
       })
       .then(r => r.json())
       .then(data => {
         const a = data.address || {};
-        // Prioritas: village/suburb → town/city_district → city → county
         const lokal = a.village || a.suburb || a.town || a.city_district || a.city || a.county || '';
         const kota  = a.city || a.town || a.county || '';
         const nama  = [lokal, kota].filter(Boolean).join(', ');
@@ -126,22 +116,21 @@ document.getElementById('btnGPS').addEventListener('click', function() {
           setLocStatus(`📍 ${nama} | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
         }
       })
-      .catch(() => { /* Geocoding gagal, tidak masalah, koordinat sudah benar */ });
+      .catch(() => {});
     },
-    // ERROR
     function(err) {
       btn.disabled = false;
       btn.textContent = origText;
 
       let msg;
       switch (err.code) {
-        case 1: // PERMISSION_DENIED
+        case 1:
           msg = '⚠ GPS ditolak. Silakan izinkan akses lokasi di browser Anda: Ketuk ikon 🔒 di address bar → Izinkan Lokasi.';
           break;
-        case 2: // POSITION_UNAVAILABLE
+        case 2:
           msg = '⚠ GPS tidak tersedia di perangkat ini. Coba aktifkan Location/GPS di pengaturan HP.';
           break;
-        case 3: // TIMEOUT
+        case 3:
           msg = '⚠ GPS timeout (>10 detik). Coba di tempat terbuka atau nyalakan GPS perangkat.';
           break;
         default:
@@ -154,7 +143,7 @@ document.getElementById('btnGPS').addEventListener('click', function() {
 });
 
 // ── Inisialisasi ──────────────────────────────────────
-setLocStatus(`📍 Pondok Pesantren Nuris | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
+setLocStatus(`📍 Pondok Pesantren Nuris Salafiyyah | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
 renderAll();
 doCalcHilal();
 tickCountdown();
