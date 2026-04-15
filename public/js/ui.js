@@ -84,8 +84,7 @@ function _drawMoon(canvas, p) {
   } else {
     const p2=p-.5, xt=cx+r*(1-4*p2)*(p2<0.25?-1:1);
     ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI/2,-Math.PI/2);
-
-ctx.bezierCurveTo(xt,cy-r,xt,cy+r,cx,cy+r); ctx.closePath();
+    ctx.bezierCurveTo(xt,cy-r,xt,cy+r,cx,cy+r); ctx.closePath();
     ctx.fillStyle=g; ctx.fill();
   }
   ctx.restore();
@@ -93,20 +92,140 @@ ctx.bezierCurveTo(xt,cy-r,xt,cy+r,cx,cy+r); ctx.closePath();
   ctx.strokeStyle='rgba(200,164,74,.3)'; ctx.lineWidth=1.5; ctx.stroke();
 }
 
-// ── KIBLAT ────────────────────────────────────────────
+// ── KIBLAT & LIVE KOMPAS ────────────────────────────────
+let qiblaAzimuth = 0;
+let isCompassActive = false;
+
 function renderQibla() {
   const kLat=21.4225, kLng=39.8262, dLng=(kLng-LNG)*D2R;
   const y2 = Math.sin(dLng)*Math.cos(kLat*D2R);
   const x2 = Math.cos(LAT*D2R)*Math.sin(kLat*D2R) - Math.sin(LAT*D2R)*Math.cos(kLat*D2R)*Math.cos(dLng);
-  const az  = fix(Math.atan2(y2, x2) * R2D);
+  qiblaAzimuth = fix(Math.atan2(y2, x2) * R2D);
   const dLat=(kLat-LAT)*D2R, dL2=(kLng-LNG)*D2R;
   const a = Math.sin(dLat/2)**2 + Math.cos(LAT*D2R)*Math.cos(kLat*D2R)*Math.sin(dL2/2)**2;
   const dist = Math.round(2 * 6371 * Math.asin(Math.sqrt(a)));
   const dirs = ['U','UBL','BL','BBL','B','BSD','SD','SSD','S','STG','TG','TTG','T','TLR','LR','ULR'];
-  document.getElementById('cpN').style.transform = `rotate(${az}deg)`;
-  document.getElementById('qAz').innerHTML  = `${az.toFixed(2)}<span>° dari Utara</span>`;
-  document.getElementById('qDir').textContent  = dirs[Math.round(az/22.5)%16];
+  
+  if (!isCompassActive) {
+    document.getElementById('cpN').style.transform = `rotate(${qiblaAzimuth}deg)`;
+    document.getElementById('compassDial').style.transform = `rotate(0deg)`;
+  }
+  
+  document.getElementById('qAz').innerHTML  = `${qiblaAzimuth.toFixed(2)}<span>° dari Utara</span>`;
+  document.getElementById('qDir').textContent  = dirs[Math.round(qiblaAzimuth/22.5)%16];
   document.getElementById('qDist').innerHTML   = `${dist.toLocaleString('id-ID')}<span>km</span>`;
+  _drawCompassTicks();
+}
+
+function _drawCompassTicks() {
+  const t = document.getElementById('compassTicks');
+  if (t.children.length > 0) return;
+  let h = '';
+  for(let i=0; i<72; i++) {
+    const deg = i*5, isM = i%9===0;
+    h += `<div class="ctk ${isM?'m':''}" style="transform:rotate(${deg}deg) translateX(-50%)"></div>`;
+  }
+  t.innerHTML = h;
+}
+
+// Handler Kompas Live
+document.getElementById('btnCompass').addEventListener('click', async () => {
+  const btn = document.getElementById('btnCompass');
+  const st = document.getElementById('compassSt');
+  
+  if (isCompassActive) {
+    isCompassActive = false;
+    window.removeEventListener('deviceorientationabsolute', _handleOrientation);
+    window.removeEventListener('deviceorientation', _handleOrientation);
+    btn.innerHTML = '🧭 Aktifkan Kompas Live';
+    st.textContent = 'Kompas dimatikan.';
+    document.getElementById('qHeadRow').style.display = 'none';
+    document.getElementById('compassGlow').style.opacity = '0';
+    renderQibla(); // reset view
+    return;
+  }
+
+  // Request perizinan iOS 13+
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const permission = await DeviceMotionEvent.requestPermission();
+      if (permission === 'granted') {
+        _startCompass();
+      } else {
+        st.textContent = 'Izin akses sensor ditolak.';
+      }
+    } catch (e) {
+      st.textContent = 'Gagal mengakses sensor.';
+    }
+  } else {
+    _startCompass();
+  }
+});
+
+function _startCompass() {
+  if (!window.DeviceOrientationEvent) {
+    document.getElementById('compassSt').textContent = 'Perangkat tidak mendukung sensor kompas.';
+    return;
+  }
+  isCompassActive = true;
+  document.getElementById('btnCompass').innerHTML = '⏹ Matikan Kompas';
+  document.getElementById('compassSt').textContent = 'Mengkalibrasi... Putar HP angka 8.';
+  document.getElementById('qHeadRow').style.display = 'flex';
+  
+  // Prioritaskan event absolute
+  if ('ondeviceorientationabsolute' in window) {
+    window.addEventListener('deviceorientationabsolute', _handleOrientation);
+  } else {
+    window.addEventListener('deviceorientation', _handleOrientation);
+  }
+}
+
+let lastDialDeg = 0;
+function _handleOrientation(e) {
+  if (!isCompassActive) return;
+  let heading = null;
+  
+  if (e.webkitCompassHeading) {
+    // iOS
+    heading = e.webkitCompassHeading;
+  } else if (e.absolute && e.alpha !== null) {
+    // Android
+    heading = 360 - e.alpha;
+  }
+  
+  if (heading !== null) {
+    document.getElementById('compassSt').textContent = 'Kompas Aktif & Akurat';
+    document.getElementById('qHead').innerHTML = `${heading.toFixed(1)}<span>°</span>`;
+    document.getElementById('compassHeadLbl').textContent = `${Math.round(heading)}°`;
+    
+    // Perhitungan putaran dial agar mulus tanpa glitch 360->0
+    let dialRot = -heading;
+    const diff = dialRot - lastDialDeg;
+    if (diff > 180) dialRot -= 360;
+    else if (diff < -180) dialRot += 360;
+    lastDialDeg = dialRot;
+    
+    document.getElementById('compassDial').style.transform = `rotate(${dialRot}deg)`;
+    document.getElementById('cpN').style.transform = `rotate(${qiblaAzimuth}deg)`;
+    
+    // Deteksi alignment kiblat
+    const diffQ = Math.abs((heading + qiblaAzimuth) % 360 - 360) % 360;
+    const diffAbs = Math.min(diffQ, 360 - diffQ);
+    const glow = document.getElementById('compassGlow');
+    
+    if (diffAbs < 3) {
+      glow.style.opacity = '1';
+      glow.style.boxShadow = '0 0 40px var(--green), inset 0 0 20px var(--green)';
+      if ("vibrate" in navigator && diffAbs < 1) navigator.vibrate(50);
+    } else if (diffAbs < 10) {
+      glow.style.opacity = '0.5';
+      glow.style.boxShadow = '0 0 20px var(--gold2), inset 0 0 10px var(--gold2)';
+    } else {
+      glow.style.opacity = '0';
+    }
+  } else {
+    document.getElementById('compassSt').textContent = 'Menunggu data sensor kompas...';
+  }
 }
 
 // ── KONVERSI TANGGAL ──────────────────────────────────
