@@ -1,13 +1,15 @@
 /**
  * hilal.js — Kalkulasi Hilal & Render Laporan
  * Algoritma: Jean Meeus — Astronomical Algorithms 2nd ed.
- * Al-Fajri v2.3.5 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.4.0 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js
  *
- * CHANGELOG v2.3.6:
- *  - FIX: bestK mutation inside loop causng wrong month evaluation (this caused the 62 deg alt glitch!)
- *  - RESTORE: render display for obsJD (hari rukyat) to match Kanzul Falak's "day after" report
- *  - Evaluasi wujudul hilal pada hari ijtima/hari ke-29 (obsBase)
+ * CHANGELOG v2.4.0:
+ *  - FIX: obsBase now uses LOCAL date via jdG(jdIjtima + tz/24)
+ *    so that an ijtima at 20:01 UT (03:01 WIB) → local date = May 17, not May 16
+ *  - FIX: ijtimaGreg display uses local date
+ *  - Matches calcSunSet/calcMoonSet rewrite in astro.js v2.4.0
+ *  - bestK loop fix from v2.3.6 retained
  */
 'use strict';
 
@@ -34,23 +36,25 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const dT_s    = deltaT(gregI.year + gregI.month/12);
   const jdIjtima = jdeTDT - dT_s/86400;  // TDT → UT
 
-  // 2. JD tengah malam hari ijtima (obsBase) & tentukan hari rukyat (obsJD)
-  const gregI2  = jdG(jdIjtima);
-  const obsBase = jd(gregI2.year, gregI2.month, gregI2.day);   // midnight hari ijtima
-  const ss0     = calcSunSet(obsBase, lat, lng, tz, elev);     // sunset hari ijtima
+  // 2. Konversi ke tanggal LOKAL (WIB) untuk menentukan hari
+  //    FIX v2.4.0: jdG(jdIjtima) mengembalikan tanggal UT.
+  //    Untuk mendapatkan tanggal lokal, tambahkan tz/24 sebelum konversi.
+  const gregLocal = jdG(jdIjtima + tz/24);   // tanggal LOKAL ijtima
+  const obsBase   = jd(gregLocal.year, gregLocal.month, gregLocal.day);  // midnight UT, tanggal lokal
+  const ss0       = calcSunSet(obsBase, lat, lng, tz, elev);  // sunset hari ijtima (lokal)
 
-  // obsJD = hari rukyat pertama yang valid:
-  // - jika ijtima SETELAH sunset → pengamatan besok  (obsBase + 1)
-  // - jika ijtima SEBELUM sunset → pengamatan hari ini (obsBase)
-  const obsJD   = (ss0 && jdIjtima > ss0) ? obsBase+1 : obsBase;
+  // obsJD = hari rukyat:
+  //   Bandingkan jdIjtima (UT) dengan ss0 (UT).
+  //   Jika ijtima SETELAH sunset → rukyat besok
+  //   Jika ijtima SEBELUM sunset → rukyat hari ini
+  const obsJD = (ss0 && jdIjtima > ss0) ? obsBase+1 : obsBase;
 
-  // 3. DATA DISPLAY = disetel ke HARI RUKYAT (obsJD)
-  // Karena user ingin melihat posisi bulan saat diamati (hari setelah ijtima jika ijtima < sunset)
+  // 3. Sunset & moonset hari rukyat
   const jdSunset  = calcSunSet(obsJD, lat, lng, tz, elev);
   if (!jdSunset) return { error:'Matahari tidak terbenam pada tanggal ini.' };
   const jdMoonset = calcMoonSet(obsJD, lat, lng, tz, elev);
 
-  // 4. Posisi benda langit saat matahari terbenam HARI RUKYAT
+  // 4. Posisi benda langit saat matahari terbenam hari rukyat
   const sunG  = sunPos(jdSunset);
   const moonG = moonPos(jdSunset);
   const sunT  = topoCorrect(sunG,  lat, lng, elev, jdSunset);
@@ -95,17 +99,14 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const ijtimaTopoLT= lt(jdIjtimaT), ijtimaTopoUT = ijtimaTopoLT-tz;
   const bestTimeLT  = moonsetLT ? (sunsetLT+moonsetLT)/2 : sunsetLT+0.1;
   const lamaHilal   = moonsetLT ? moonsetLT-sunsetLT : 0;
-
-  // FIX v2.3.5: umurHilal = selisih JD sunset hari ijtima vs JD ijtima
-  // Nilai NEGATIF menunjukkan ijtima SETELAH sunset (belum terjadi saat pengamatan)
-  const umurHilal = (jdSunset - jdIjtima) * 24;
+  const umurHilal   = (jdSunset - jdIjtima) * 24;
 
   // 10. Arc of Vision (ARCV)
   const ARCV = altMoonApparent - altSunAirless;
 
   // 11. Kriteria visibilitas
-  // Wujud dilisensikan sesuai evaluasi saat HARI IJTIMA (obsBase)
-  // Tapi kita render ke layar hari obsJD. Wujudul hilal mengharuskan divalidasi pada hari ijtima/hari rukyat aslinya (29th)
+  //     IRNU & lebar → dievaluasi pada hari rukyat (obsJD)
+  //     Wujudul Hilal → dievaluasi pada hari ijtima (obsBase)
   const ss1 = ss0 || calcSunSet(obsBase, lat, lng, tz, elev);
   const ms1 = calcMoonSet(obsBase, lat, lng, tz, elev);
   const wujud    = jdIjtima<ss1 && (ms1 ? ms1>ss1 : false);
@@ -116,8 +117,7 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
 
   // 12. Posisi & keadaan hilal
   const posisiDeg = Math.abs(moonT.Dec-sunT.Dec);
-
-const posisiDir = moonT.Dec>sunT.Dec?'Utara':'Selatan';
+  const posisiDir = moonT.Dec>sunT.Dec?'Utara':'Selatan';
   const keadaan   = moonT.Dec>0?'Miring ke Utara':'Miring ke Selatan';
 
   // 13. Azimuth saat hilal terbenam
@@ -126,7 +126,6 @@ const posisiDir = moonT.Dec>sunT.Dec?'Utara':'Selatan';
   const moonHMs = toHoriz(tmms.RA,tmms.Dec,lat,lng,jdMoonset||jdSunset);
 
   // 14. Prediksi hari pertama awal bulan (kriteria IRNU)
-  // Loop dimulai dari obsJD (hari rukyat pertama yang valid)
   let predJD=null;
   for (let d=0; d<=4; d++) {
     const to=obsJD+d, ts=calcSunSet(to,lat,lng,tz,elev);
@@ -139,9 +138,11 @@ const posisiDir = moonT.Dec>sunT.Dec?'Utara':'Selatan';
     if (tmar>=3.0&&telG>=6.4) { predJD=to; break; }
     if (d>=3&&!predJD) predJD=to+1;
   }
-  // +1.5 karena hari Hijri dimulai saat maghrib, sehingga tanggal 1 Gregorian = keesokan harinya
   const predGreg = predJD?jdG(predJD+1.5):null;
   const predWtn  = predJD?weton(predJD+1.5):'—';
+
+  // FIX v2.4.0: ijtimaGreg uses LOCAL date, not UT date
+  const ijtimaGregLocal = jdG(jdIjtima + tz/24);
 
   return {
     markaz,hYear,hMonth,lat,lng,elev,tz,
@@ -154,12 +155,10 @@ const posisiDir = moonT.Dec>sunT.Dec?'Utara':'Selatan';
     elongGeo,elongTopo,W_arcsec,W_arcmin,illuminasi,nurulHilal,ARCV,
     qOdeh,qYallop,irnu_vis,irnu_mar,wujud,
     posisiDeg,posisiDir,keadaan,moonHMs,
-    ijtimaGreg : jdG(jdIjtima),
-    obsGreg    : jdG(obsJD+0.5),    // hari rukyat
+    ijtimaGreg : ijtimaGregLocal,
+    obsGreg    : jdG(obsJD+0.5),
     wetonIjtima: weton(jdIjtima+tz/24),
-    wetonObs   : weton(obsJD+0.5),  // weton hari rukyat
-    rukyatGreg : null,              // fallback
-    wetonRukyat: weton(obsJD+0.5),
+    wetonObs   : weton(obsJD+0.5),
     sunAtIjtima   : sunPos(jdIjtima),
     moonAtIjtimaT : moonPos(jdIjtimaT),
     predGreg, predWtn
@@ -188,16 +187,13 @@ function renderHilalReport(r) {
   const lhSign = r.lamaHilal < 0 ? '-' : '';
   const hijI=jdToHijri(r.jdIjtima);
 
-  const rukyatInfo = '';
-
   let h=`<span style="display:block;text-align:center;font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--gold2)">Awal Bulan ${HM[r.hMonth-1]} ${r.hYear} H</span>\n`;
-  h+=`<span style="display:block;text-align:center;color:var(--text2);font-size:.72rem">Al-Fajri v2.3.6 — Lembaga Falakiyah PCNU Kencong | Jean Meeus (${MLR.length}+${MB.length} Suku)</span>\n`;
+  h+=`<span style="display:block;text-align:center;color:var(--text2);font-size:.72rem">Al-Fajri v2.4.0 — Lembaga Falakiyah PCNU Kencong | Jean Meeus (${MLR.length}+${MB.length} Suku)</span>\n`;
   h+=sep();
   h+=row('Markaz',r.markaz)+row('Lintang',latStr)+row('Bujur',lngStr);
   h+=row('Elevasi',r.elev.toFixed(1)+' mdpl')+row('Zona Waktu','UTC+'+r.tz);
   h+=sep()+sec('DATA IJTIMA');
   h+=row('Tanggal Ijtima Geo',`${r.wetonIjtima}, ${r.ijtimaGreg.day} ${MON3[r.ijtimaGreg.month-1]} ${r.ijtimaGreg.year} M`,'gd');
-  h+=row('Tanggal Ijtima Topo',`${weton(r.moonAtIjtimaT.T*36525+2451545+r.dT_s/86400)}, ${r.ijtimaGreg.day} ${MON3[r.ijtimaGreg.month-1]} ${r.ijtimaGreg.year} M`);
   h+=row('Ijtima Hijriyah Geo',`${hijI.day} ${HM[hijI.month-1]} ${hijI.year} H`);
   h+=row('Bujur Ijtima Geo',dms(r.sunAtIjtima.sunLon))+row('Bujur Ijtima Topo',dms(r.moonAtIjtimaT.lon));
   h+='\n';
@@ -207,11 +203,9 @@ function renderHilalReport(r) {
   h+='\n';
   h+=row('Jam Ijtima Geo LT',fmtF(r.ijtimaGeoLT))+row('Jam Ijtima Geo UT',fmtF(r.ijtimaGeoUT));
   h+=row('Jam Ijtima Topo LT',fmtF(r.ijtimaTopoLT))+row('Jam Ijtima Topo UT',fmtF(r.ijtimaTopoUT));
-  h+=sep()+sec('WAKTU TERBENAM (HARI PENGAMATAN)');
+  h+=sep()+sec('WAKTU TERBENAM');
   h+=row('Matahari Terbenam',fmtF(r.sunsetLT)+' LT','gd');
-
-h+=row('Hilal Terbenam',r.moonsetLT?fmtF(r.moonsetLT)+' LT':'—','gd');
-  h+=rukyatInfo;
+  h+=row('Hilal Terbenam',r.moonsetLT?fmtF(r.moonsetLT)+' LT':'—','gd');
   h+=sep()+sec('POSISI BENDA LANGIT (TOPO AT SUNSET)');
   h+=row('Bujur Hilal Topo',dms(r.moonG.lon))+row('Lintang Hilal Topo',dms(r.moonG.lat));
   h+=row('Bujur Matahari Topo',dms(r.sunT.lambda||r.sunG.sunLon));
@@ -219,15 +213,15 @@ h+=row('Hilal Terbenam',r.moonsetLT?fmtF(r.moonsetLT)+' LT':'—','gd');
   h+=row('Sun RA Topo Hour',hms(r.sunT.RA/15))+row('Sun Topo Decli',dms(r.sunT.Dec));
   h+=sep()+sec('TINGGI HILAL');
   h+=row('T. Hilal Hakiki/Geo',dms(r.altMoonGeo),'gd')+row('T. Airless Topo Sun',dms(r.altSunAirless))+'\n';
-  h+=row('T. Hilal Topo Airless Upper', dms(r.altMoonAirless+r.SD));
+  h+=row('T. Hilal Topo Airless Upper',dms(r.altMoonAirless+r.SD));
   h+=row('T. Hilal Topo Airless Center',dms(r.altMoonAirless),'gd');
-  h+=row('T. Hilal Topo Airless Lower', dms(r.altMoonAirless-r.SD))+'\n';
-  h+=row('T. Hilal Topo Apparent Upper', dms(r.altMoonApparent+r.SD));
+  h+=row('T. Hilal Topo Airless Lower',dms(r.altMoonAirless-r.SD))+'\n';
+  h+=row('T. Hilal Topo Apparent Upper',dms(r.altMoonApparent+r.SD));
   h+=row('T. Hilal Topo Apparent Center',dms(r.altMoonApparent),'gd');
-  h+=row('T. Hilal Topo Apparent Lower', dms(r.altMoonApparent-r.SD))+'\n';
-  h+=row("T. Hilal Mar'i Upper", dms(r.altMoonMari+r.SD));
+  h+=row('T. Hilal Topo Apparent Lower',dms(r.altMoonApparent-r.SD))+'\n';
+  h+=row("T. Hilal Mar'i Upper",dms(r.altMoonMari+r.SD));
   h+=row("T. Hilal Mar'i Center",dms(r.altMoonMari),'gd');
-  h+=row("T. Hilal Mar'i Lower", dms(r.altMoonMari-r.SD));
+  h+=row("T. Hilal Mar'i Lower",dms(r.altMoonMari-r.SD));
   h+=sep()+sec('AZIMUTH & ELONGASI');
   h+=row('Az. Matahari',dmsU(r.sunH.az))+row('Az. Hilal',dmsU(r.moonH.az));
   h+=row('Elongasi Hilal Geo',dms(r.elongGeo),'gd')+row('Elongasi Hilal Topo',dms(r.elongTopo));
@@ -249,7 +243,7 @@ h+=row('Hilal Terbenam',r.moonsetLT?fmtF(r.moonsetLT)+' LT':'—','gd');
   h+=row('Wujudul Hilal',r.wujud?'✓ TERPENUHI':'✗ Tidak Terpenuhi',r.wujud?'g':'r');
   h+=row('Odeh',r.qOdeh>=5.65?'A — Mudah':r.qOdeh>=2?'B — Terlihat':r.qOdeh>=-0.96?'C — Marginal':'D — Tidak',r.qOdeh>=2?'g':r.qOdeh>=-0.96?'a':'r');
   h+='\n'+row('Prediksi Kri. IRNU',pred,'gd');
-  h+=sep()+`<span style="display:block;text-align:center;color:var(--text3);font-size:.68rem">Al-Fajri v2.3.6 — Jean Meeus — Lembaga Falakiyah PCNU Kencong</span>`;
+  h+=sep()+`<span style="display:block;text-align:center;color:var(--text3);font-size:.68rem">Al-Fajri v2.4.0 — Jean Meeus — Lembaga Falakiyah PCNU Kencong</span>`;
   document.getElementById('hilalOut').innerHTML=h;
 
   // Kartu kriteria
@@ -259,9 +253,9 @@ h+=row('Hilal Terbenam',r.moonsetLT?fmtF(r.moonsetLT)+' LT':'—','gd');
      res:r.irnu_vis?'Terlihat (Visible)':r.irnu_mar?'Batas (Marginal)':'Tidak Terlihat',
      cls:r.irnu_vis?'v':r.irnu_mar?'m':'x',
      det:`T. Mar'i: ${dms(r.altMoonMari)} | Elong: ${dms(r.elongGeo)}`},
-    {name:'Wujudul Hilal',desc:'Ijtima sblm sunset H-1 bulan baru & bulan terbenam setelah matahari',
+    {name:'Wujudul Hilal',desc:'Ijtima sebelum sunset & bulan terbenam setelah matahari',
      res:r.wujud?'Wujud — Terpenuhi':'Tidak Wujud',cls:r.wujud?'v':'x',
-     det:`(Dinilai dari Sunset Hari Ijtima/29)`},
+     det:`Ijtima: ${fmtF(r.ijtimaGeoLT)} | Sunset: ${fmtF(r.sunsetLT)}`},
     {name:'Odeh 2006',desc:'Berdasarkan ARCV dan Lebar Hilal (W)',
      res:r.qOdeh>=5.65?'A — Mudah':r.qOdeh>=2?'B — Terlihat':r.qOdeh>=-0.96?'C — Marginal':'D — Tidak',
      cls:r.qOdeh>=2?'v':r.qOdeh>=-0.96?'m':'x',
