@@ -4,14 +4,10 @@
  * Al-Fajri v2.3.4 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js
  *
- * CHANGELOG:
- *  v2.3.4 (2026-04-15):
- *   - Fix: STOP redeclaring functions already in astro.js
- *     (calcSunSet, calcMoonSet, newMoonJDE, kFromYM, refraction, horizDip)
- *   - Fix: predGreg uses +1 day (awal bulan = hari SETELAH rukyat)
- *   - Fix: topoCorrect call order matches astro.js signature
- *   - Nurul Hilal formula fix (W/2SD)
- *   - Umur Hilal via JD diff
+ * CHANGELOG v2.3.4:
+ *  - Fix predGreg +0.5 → +1.5 (awal bulan = hari setelah rukyat)
+ *  - Fix nurulHilal formula (W/diameter)
+ *  - Fix umurHilal via JD diff (aman lintas hari)
  */
 'use strict';
 
@@ -49,7 +45,6 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const jdMoonset = calcMoonSet(obsJD, lat, lng, tz, elev);
 
   // 4. Posisi benda langit saat matahari terbenam
-  // NOTE: topoCorrect signature di astro.js = (obj, lat, lng, elev, jd0)
   const sunG  = sunPos(jdSunset);
   const moonG = moonPos(jdSunset);
   const sunT  = topoCorrect(sunG,  lat, lng, elev, jdSunset);
@@ -64,7 +59,7 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const altMoonAirless = moonH.alt;
   const SD = moonT.SD;
   const altMoonApparent = altMoonAirless + refraction(altMoonAirless);
-  const dip = horizDip(elev);
+  const dip = horizDip(elev);            // 1.76√h/60 derajat
   const altMoonMari = altMoonApparent + dip;
 
   // 6. Elongasi
@@ -72,11 +67,11 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const elongTopo = elongation(moonT.RA, moonT.Dec, sunT.RA,  sunT.Dec);
 
   // 7. Lebar hilal, illuminasi, nurul hilal
-  // FIX v2.3.4: Nurul Hilal = W / (2 * SD)
   const W_arcsec   = moonT.SD*2*3600*Math.pow(Math.sin(elongTopo*D2R/2),2);
   const W_arcmin   = W_arcsec/60;
   const illuminasi = (1-Math.cos(elongGeo*D2R))/2*100;
-  const nurulHilal = W_arcsec / (moonT.SD*2*3600);  // FIX: ratio W/diameter
+  // FIX v2.3.4: Nurul Hilal = W / diameter (ratio, bukan W*π/648000)
+  const nurulHilal = W_arcsec / (moonT.SD*2*3600);
 
   // 8. Ijtima toposentrik (cari elongasi minimum)
   let jdIjtimaT=jdIjtima, minE=999;
@@ -95,7 +90,7 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const ijtimaTopoLT=lt(jdIjtimaT), ijtimaTopoUT=ijtimaTopoLT-tz;
   const bestTimeLT  =moonsetLT?(sunsetLT+moonsetLT)/2:sunsetLT+0.1;
   const lamaHilal   =moonsetLT?moonsetLT-sunsetLT:0;
-  // FIX v2.3.4: umur hilal via JD difference (aman lintas hari)
+  // FIX v2.3.4: umur hilal via JD (aman lintas hari)
   const umurHilal   =(jdSunset - jdIjtima) * 24;
 
   // 10. Arc of Vision (ARCV)
@@ -120,7 +115,7 @@ const posisiDir = moonT.Dec>sunT.Dec?'Utara':'Selatan';
   const moonHMs = toHoriz(tmms.RA,tmms.Dec,lat,lng,jdMoonset||jdSunset);
 
   // 14. Prediksi hari pertama (kriteria IRNU)
-  // FIX v2.3.4: predGreg = hari SETELAH pengamatan (+1 hari karena Hijri mulai sore)
+  // FIX v2.3.4: predGreg +1.5 (bukan +0.5) karena awal bulan Hijri = keesokan hari Gregorian
   let predJD=null;
   for (let d=0; d<=4; d++) {
     const to=obsJD+d, ts=calcSunSet(to,lat,lng,tz,elev);
@@ -133,7 +128,6 @@ const posisiDir = moonT.Dec>sunT.Dec?'Utara':'Selatan';
     if (tmar>=3.0&&telG>=6.4) { predJD=to; break; }
     if (d>=3&&!predJD) predJD=to+1;
   }
-  // +1.5 bukan +0.5: awal bulan Hijri = keesokan hari Gregorian
   const predGreg = predJD?jdG(predJD+1.5):null;
   const predWtn  = predJD?weton(predJD+1.5):'—';
 
