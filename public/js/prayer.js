@@ -1,9 +1,11 @@
 /**
  * prayer.js — Kalkulasi Waktu Sholat (Metode Kemenag: Fajr 20°, Isya 18°)
- * Al-Fajri v2.3.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.3.3 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js
  *
  * CHANGELOG:
+ *  v2.3.3 (2026-04-15):
+ *   - Fix kompatibilitas DOM untuk versi index terbaru (penambahan nullish checks)
  *  v2.3.2 (2026-04-15):
  *   - Tambah waktu Dhuha (ketinggian matahari +4.5°)
  *   - Tambah render Dhuha di renderPrayer() antara Syuruq dan Dzuhur
@@ -77,24 +79,34 @@ function renderPrayer() {
   let cur = -1;
   for (let i = 0; i < mins.length; i++) if (mins[i] !== -1 && mins[i] <= nowMin) cur = i;
 
-  document.getElementById('prayerGrid').innerHTML = prayers.map((pr, i) =>
-    `<div class="pi ${i===cur?'now':''}"
-       ${pr.name==='Dhuha'?'title="Waktu masuk Dhuha (matahari +4.5°)"':''}>
-      <div class="pi-name">${pr.name}</div>
-      <div class="pi-ar">${pr.ar}</div>
-      <div class="pi-time">${pr.t}</div>
-    </div>`).join('');
+  const prayerGrid = document.getElementById('prayerGrid');
+  if (prayerGrid) {
+    prayerGrid.innerHTML = prayers.map((pr, i) =>
+      `<div class="pi ${i===cur?'now':''}"
+         ${pr.name==='Dhuha'?'title="Waktu masuk Dhuha (matahari +4.5°)"':''}>
+        <div class="pi-name">${pr.name}</div>
+        <div class="pi-ar">${pr.ar}</div>
+        <div class="pi-time">${pr.t}</div>
+      </div>`).join('');
+  }
 
-  document.getElementById('sunData').innerHTML = [
-    { n:'Deklinasi',   v: p.dec.toFixed(4)+'°' },
-    { n:'Eq. of Time', v: p.eqt.toFixed(4)+' mnt' },
-    { n:'Kulminasi',   v: fmtHM(p.noonRaw) }
-  ].map(x => `<div class="pi"><div class="pi-name">${x.n}</div><div class="pi-time" style="font-size:1.15rem">${x.v}</div></div>`).join('');
+  const sunData = document.getElementById('sunData');
+  if (sunData) {
+    sunData.innerHTML = [
+      { n:'Deklinasi',   v: p.dec.toFixed(4)+'°' },
+      { n:'Eq. of Time', v: p.eqt.toFixed(4)+' mnt' },
+      { n:'Kulminasi',   v: fmtHM(p.noonRaw) }
+    ].map(x => `<div class="pi"><div class="pi-name">${x.n}</div><div class="pi-time" style="font-size:1.15rem">${x.v}</div></div>`).join('');
+  }
 }
 
 // ── Countdown (dipanggil tiap detik) ─────────────────
 // FIX: pakai total detik agar countdown presisi HH:MM:SS
 function tickCountdown() {
+  const cdVal = document.getElementById('cdVal');
+  const cdNext = document.getElementById('cdNext');
+  if (!cdVal && !cdNext) return;
+
   const now = new Date();
   const p   = _pCache.result ||
               prayerTimes(now.getFullYear(), now.getMonth()+1, now.getDate(), LAT, LNG, TZ, ELEV);
@@ -117,7 +129,7 @@ function tickCountdown() {
     if (d < mn) { mn = d; ni = i; }
   }
 
-const hh = Math.floor(mn/3600), mm = Math.floor((mn%3600)/60), ss = mn%60;
-  document.getElementById('cdVal').textContent  = `${pZ(hh)}:${pZ(mm)}:${pZ(ss)}`;
-  document.getElementById('cdNext').textContent = `Menuju ${p5[ni].n} (${p5[ni].t})`;
+  const hh = Math.floor(mn/3600), mm = Math.floor((mn%3600)/60), ss = mn%60;
+  if (cdVal) cdVal.textContent  = `${pZ(hh)}:${pZ(mm)}:${pZ(ss)}`;
+  if (cdNext) cdNext.textContent = `Menuju ${p5[ni].n} (${p5[ni].t})`;
 }

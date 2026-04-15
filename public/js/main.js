@@ -1,6 +1,6 @@
 /**
  * main.js — State global, init, tab, GPS, bintang
- * Al-Fajri v2.4.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.4.3 | Lembaga Falakiyah PCNU Kencong
  * HARUS dimuat TERAKHIR setelah semua modul lain.
  */
 'use strict';
@@ -22,6 +22,7 @@ var TZ   = 7;
     s.style.cssText =
       `left:${Math.random()*100}%;top:${Math.random()*100}%;`+
       `width:${r*2}px;height:${r*2}px;`+
+      `position:absolute;background:#fff;border-radius:50%;`+
       `--a:${Math.random()*.5+.1};--d:${Math.random()*3+1.5}s;`+
       `animation-delay:${Math.random()*5}s`;
     bg.appendChild(s);
@@ -29,9 +30,9 @@ var TZ   = 7;
 })();
 
 // ── Tabs ──────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(t => {
+document.querySelectorAll('.tab, .nav-item').forEach(t => {
   t.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab, .nav-item').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
     const panel = document.getElementById('panel-' + t.dataset.tab);
@@ -51,100 +52,131 @@ function applyLoc() {
   TZ   = parseFloat(document.getElementById('inpTZ').value)   || 7;
   const markaz = document.getElementById('inpMarkaz').value || 'Markaz';
   setLocStatus(`📍 ${markaz} | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
-  renderAll();
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof doCalcHilal === 'function') doCalcHilal();
 }
-document.getElementById('btnCalc').addEventListener('click', applyLoc);
+
+const btnCalc = document.getElementById('btnCalc') || document.getElementById('btnSaveSett');
+if (btnCalc) btnCalc.addEventListener('click', applyLoc);
 
 // ── Status Helper ─────────────────────────────────────
 function setLocStatus(msg, type) {
-  const el = document.getElementById('locSt');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = type === 'err' ? 'var(--red)' : type === 'ok' ? 'var(--green)' : 'var(--text2)';
+  const elName = document.getElementById('markazName');
+  const elCoord = document.getElementById('coordDisp');
+  if (elName && elCoord) {
+    if (msg.includes('|')) {
+      const parts = msg.split('|');
+      elName.textContent = parts[0].replace('📍', '').replace('✓', '').replace('🔍', '').trim();
+      elCoord.textContent = parts.slice(1).join(' | ').trim();
+    } else {
+      elName.textContent = msg;
+      elCoord.textContent = '';
+    }
+    elName.style.color = type === 'err' ? 'var(--red)' : type === 'ok' ? 'var(--green)' : 'var(--text2)';
+  } else {
+    const el = document.getElementById('locSt');
+    if (el) {
+      el.textContent = msg;
+      el.style.color = type === 'err' ? 'var(--red)' : type === 'ok' ? 'var(--green)' : 'var(--text2)';
+    }
+  }
 }
 
 // ── GPS ───────────────────────────────────────────────
-document.getElementById('btnGPS').addEventListener('click', function() {
-  const btn = this;
+const btnGPS = document.getElementById('btnGPS') || document.getElementById('btnDetect');
+if (btnGPS) {
+  btnGPS.addEventListener('click', function() {
+    const btn = this;
 
-  if (!navigator.geolocation) {
-    setLocStatus('⚠ Browser ini tidak mendukung GPS/Geolokasi.', 'err');
-    return;
-  }
+    if (!navigator.geolocation) {
+      setLocStatus('⚠ Browser ini tidak mendukung GPS/Geolokasi.', 'err');
+      return;
+    }
 
-  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-    setLocStatus('⚠ GPS memerlukan koneksi HTTPS.', 'err');
-    return;
-  }
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      setLocStatus('⚠ GPS memerlukan koneksi HTTPS.', 'err');
+      return;
+    }
 
-  const origText = btn.textContent;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="sp" style="border-top-color:#000;width:14px;height:14px;border-width:2px"></span>';
-  setLocStatus('🔍 Mendeteksi lokasi GPS...', '');
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sp" style="border-top-color:#000;width:14px;height:14px;border-width:2px"></span>';
+    setLocStatus('🔍 Mendeteksi lokasi GPS...', '');
 
-  navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      LAT = pos.coords.latitude;
-      LNG = pos.coords.longitude;
-      TZ  = -new Date().getTimezoneOffset() / 60;
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        LAT = pos.coords.latitude;
+        LNG = pos.coords.longitude;
+        TZ  = -new Date().getTimezoneOffset() / 60;
 
-      if (pos.coords.altitude != null && pos.coords.altitude > 0) {
-        ELEV = Math.max(0, Math.round(pos.coords.altitude));
-        document.getElementById('inpElev').value = ELEV;
-      }
-
-      document.getElementById('inpLat').value = LAT.toFixed(6);
-      document.getElementById('inpLng').value = LNG.toFixed(6);
-      document.getElementById('inpTZ').value  = TZ;
-
-      setLocStatus(`✓ GPS: ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ} | Elev: ${ELEV}m`, 'ok');
-      btn.disabled = false;
-      btn.textContent = origText;
-      renderAll();
-
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${LAT}&lon=${LNG}&zoom=14&addressdetails=1`, {
-        headers: { 'Accept-Language': 'id', 'User-Agent': 'AlFajriApp/2.4' }
-      })
-      .then(r => r.json())
-      .then(data => {
-        const a = data.address || {};
-        const lokal = a.village || a.suburb || a.town || a.city_district || a.city || a.county || '';
-        const kota  = a.city || a.town || a.county || '';
-        const nama  = [lokal, kota].filter(Boolean).join(', ');
-        if (nama) {
-          document.getElementById('inpMarkaz').value = nama;
-          setLocStatus(`📍 ${nama} | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
+        if (pos.coords.altitude != null && pos.coords.altitude > 0) {
+          ELEV = Math.max(0, Math.round(pos.coords.altitude));
+          const inpElev = document.getElementById('inpElev');
+          if (inpElev) inpElev.value = ELEV;
         }
-      })
-      .catch(() => {});
-    },
-    function(err) {
-      btn.disabled = false;
-      btn.textContent = origText;
 
-      let msg;
-      switch (err.code) {
-        case 1:
-          msg = '⚠ GPS ditolak. Silakan izinkan akses lokasi di browser Anda: Ketuk ikon 🔒 di address bar → Izinkan Lokasi.';
-          break;
-        case 2:
-          msg = '⚠ GPS tidak tersedia di perangkat ini. Coba aktifkan Location/GPS di pengaturan HP.';
-          break;
-        case 3:
-          msg = '⚠ GPS timeout (>10 detik). Coba di tempat terbuka atau nyalakan GPS perangkat.';
-          break;
-        default:
-          msg = `⚠ GPS error: ${err.message}`;
-      }
-      setLocStatus(msg, 'err');
-    },
-    { timeout: 12000, enableHighAccuracy: true, maximumAge: 30000 }
-  );
-});
+        const inpLat = document.getElementById('inpLat');
+        const inpLng = document.getElementById('inpLng');
+        const inpTZ = document.getElementById('inpTZ');
+
+        if (inpLat) inpLat.value = LAT.toFixed(6);
+        if (inpLng) inpLng.value = LNG.toFixed(6);
+        if (inpTZ) inpTZ.value  = TZ;
+
+        setLocStatus(`✓ GPS: ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ} | Elev: ${ELEV}m`, 'ok');
+        btn.disabled = false;
+        btn.textContent = origText;
+        if (typeof renderAll === 'function') renderAll();
+        if (typeof doCalcHilal === 'function') doCalcHilal();
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${LAT}&lon=${LNG}&zoom=14&addressdetails=1`, {
+          headers: { 'Accept-Language': 'id', 'User-Agent': 'AlFajriApp/2.4' }
+        })
+        .then(r => r.json())
+        .then(data => {
+          const a = data.address || {};
+          const lokal = a.village || a.suburb || a.town || a.city_district || a.city || a.county || '';
+          const kota  = a.city || a.town || a.county || '';
+          const nama  = [lokal, kota].filter(Boolean).join(', ');
+          if (nama) {
+            const inpMarkaz = document.getElementById('inpMarkaz');
+            if (inpMarkaz) inpMarkaz.value = nama;
+            setLocStatus(`📍 ${nama} | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
+          }
+        })
+        .catch(() => {});
+      },
+      function(err) {
+        btn.disabled = false;
+        btn.textContent = origText;
+
+        let msg;
+        switch (err.code) {
+          case 1:
+            msg = '⚠ GPS ditolak. Silakan izinkan akses lokasi di browser Anda: Ketuk ikon 🔒 di address bar → Izinkan Lokasi.';
+            break;
+          case 2:
+            msg = '⚠ GPS tidak tersedia di perangkat ini. Coba aktifkan Location/GPS di pengaturan HP.';
+            break;
+          case 3:
+            msg = '⚠ GPS timeout (>10 detik). Coba di tempat terbuka atau nyalakan GPS perangkat.';
+            break;
+          default:
+            msg = `⚠ GPS error: ${err.message}`;
+        }
+        setLocStatus(msg, 'err');
+      },
+      { timeout: 12000, enableHighAccuracy: true, maximumAge: 30000 }
+    );
+  });
+}
 
 // ── Inisialisasi ──────────────────────────────────────
-setLocStatus(`📍 Pondok Pesantren Nuris Salafiyyah | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
-renderAll();
-doCalcHilal();
-tickCountdown();
-setInterval(tickCountdown, 1000);
+const initMarkaz = document.getElementById('inpMarkaz') ? document.getElementById('inpMarkaz').value : 'Pondok Pesantren Nuris Salafiyyah';
+setLocStatus(`📍 ${initMarkaz} | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
+if (typeof renderAll === 'function') renderAll();
+if (typeof doCalcHilal === 'function') doCalcHilal();
+if (typeof tickCountdown === 'function') {
+  tickCountdown();
+  setInterval(tickCountdown, 1000);
+}
