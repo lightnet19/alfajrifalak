@@ -1,24 +1,34 @@
 /**
  * ui.js — Render semua panel: Hijri, Bulan, Kiblat, Konversi, Imsakiyah, Ephemeris
- * Al-Fajri v2.3.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.3.4 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js, prayer.js
  *
  * CHANGELOG:
+ *  v2.3.4 (2026-04-15):
+ *   - Restore missing global constants (HM, HM_AR, pZ) from UI refactoring
  *  v2.3.2 (2026-04-15):
  *   - Tambah kolom Dhuha ke tabel Imsakiyah
  */
 'use strict';
+
+const pZ = n => n.toString().padStart(2, '0');
+const HM = ['Muharram', 'Safar', 'Rabi\'ul Awal', 'Rabi\'ul Akhir', 'Jumadil Ula', 'Jumadil Akhira', 'Rajab', 'Sya\'ban', 'Ramadhan', 'Syawal', 'Dzulqa\'dah', 'Dzulhijjah'];
+const HM_AR = ['مُحَرَّم', 'صَفَر', 'رَبِيع الْأَوَّل', 'رَبِيع الْآخِر', 'جُمَادَى الْأُولَى', 'جُمَادَى الْآخِرَة', 'رَجَب', 'شَعْبَان', 'رَمَضَان', 'شَوَّال', 'ذُو الْقَعْدَة', 'ذُو الْحِجَّة'];
 
 // ── HIJRI ──────────────────────────────────────────────
 function renderHijri() {
   const now = new Date();
   const j0  = jd(now.getFullYear(), now.getMonth()+1, now.getDate());
   const h   = jdToHijri(j0);
-  document.getElementById('hijriDisp').innerHTML =
-    `<div class="hday">${h.day}</div>`+
-    `<div class="hmon">${HM_AR[h.month-1]}</div>`+
-    `<div class="hyr">${HM[h.month-1]} ${h.year} H</div>`+
-    `<div class="hgreg">${now.toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>`;
+  
+  const hijriDisp = document.getElementById('hijriDisp');
+  if (hijriDisp) {
+    hijriDisp.innerHTML =
+      `<div class="hday">${h.day}</div>`+
+      `<div class="hmon">${HM_AR[h.month-1]}</div>`+
+      `<div class="hyr">${HM[h.month-1]} ${h.year} H</div>`+
+      `<div class="hgreg">${now.toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>`;
+  }
 
   // Kalender grid
   const firstJD   = hijriToJD(h.year, h.month, 1);
@@ -30,7 +40,9 @@ function renderHijri() {
   ['Ahd','Sen','Sel','Rab','Kam','Jum','Sab'].forEach(d => cal += `<div class="cal-h">${d}</div>`);
   for (let i = 0; i < wd; i++) cal += `<div></div>`;
   for (let d = 1; d <= total; d++) cal += `<div class="cal-c ${d===h.day?'td':''}">${d}</div>`;
-  document.getElementById('hijriCal').innerHTML = cal + '</div>';
+  
+  const hijriCal = document.getElementById('hijriCal');
+  if (hijriCal) hijriCal.innerHTML = cal + '</div>';
 }
 
 // ── BULAN (FASE) ──────────────────────────────────────
@@ -48,11 +60,20 @@ function renderMoon() {
   const names  = ['Bulan Baru','Sabit Awal','Kuartal Pertama','Cembung Awal',
                   'Purnama','Cembung Akhir','Kuartal Akhir','Sabit Akhir'];
   const cycPos = cycle % 1;
-  document.getElementById('moonPN').textContent = names[Math.floor((cycPos + 0.0625) * 8) % 8];
-  document.getElementById('moonIl').textContent = `Iluminasi: ${illum} %`;
-  document.getElementById('moonAg').textContent = `Umur Bulan: ${age.toFixed(1)} hari`;
-  document.getElementById('moonBF').style.width = cycPos * 100 + '%';
-  _drawMoon(document.getElementById('moonCanvas'), cycPos);
+  const moonPN = document.getElementById('moonPN');
+  if (moonPN) moonPN.textContent = names[Math.floor((cycPos + 0.0625) * 8) % 8];
+  
+  const moonIl = document.getElementById('moonIl');
+  if (moonIl) moonIl.textContent = `Iluminasi: ${illum} %`;
+  
+  const moonAg = document.getElementById('moonAg');
+  if (moonAg) moonAg.textContent = `Umur Bulan: ${age.toFixed(1)} hari`;
+  
+  const moonBF = document.getElementById('moonBF');
+  if (moonBF) moonBF.style.width = cycPos * 100 + '%';
+  
+  const canvas = document.getElementById('moonCanvas');
+  if (canvas) _drawMoon(canvas, cycPos);
 
   // Fase mendatang
   const icons = ['🌑','🌓','🌕','🌗'], phNames = ['Bulan Baru','Kuartal I','Purnama','Kuartal III'];
@@ -63,10 +84,14 @@ function renderMoon() {
       const jde = newMoonJDE(k) + off[f];
       if (jde > j0) { const d = jdG(jde); ev.push({ icon:icons[f], name:phNames[f], date:`${d.day}/${d.month}/${d.year}` }); }
     }
-  document.getElementById('moonFut').innerHTML = ev.map(e =>
-    `<div class="pi"><div style="font-size:1.5rem;margin-bottom:5px">${e.icon}</div>`+
-    `<div class="pi-name">${e.name}</div>`+
-    `<div style="font-family:'Cormorant Garamond',serif;font-size:.98rem;color:var(--gold2);margin-top:6px">${e.date}</div></div>`).join('');
+  
+  const moonFut = document.getElementById('moonFut');
+  if (moonFut) {
+    moonFut.innerHTML = ev.map(e =>
+      `<div class="pi"><div style="font-size:1.5rem;margin-bottom:5px">${e.icon}</div>`+
+      `<div class="pi-name">${e.name}</div>`+
+      `<div style="font-family:'Cormorant Garamond',serif;font-size:.98rem;color:var(--gold2);margin-top:6px">${e.date}</div></div>`).join('');
+  }
 }
 
 function _drawMoon(canvas, p) {
@@ -107,18 +132,24 @@ function renderQibla() {
   const dirs = ['U','UBL','BL','BBL','B','BSD','SD','SSD','S','STG','TG','TTG','T','TLR','LR','ULR'];
   
   if (!isCompassActive) {
-    document.getElementById('cpN').style.transform = `rotate(${qiblaAzimuth}deg)`;
-    document.getElementById('compassDial').style.transform = `rotate(0deg)`;
+    const cpN = document.getElementById('cpN');
+    if (cpN) cpN.style.transform = `rotate(${qiblaAzimuth}deg)`;
+    const cvDial = document.getElementById('compassDial');
+    if (cvDial) cvDial.style.transform = `rotate(0deg)`;
   }
   
-  document.getElementById('qAz').innerHTML  = `${qiblaAzimuth.toFixed(2)}<span>° dari Utara</span>`;
-  document.getElementById('qDir').textContent  = dirs[Math.round(qiblaAzimuth/22.5)%16];
-  document.getElementById('qDist').innerHTML   = `${dist.toLocaleString('id-ID')}<span>km</span>`;
+  const qAz = document.getElementById('qAz');
+  if (qAz) qAz.innerHTML  = `${qiblaAzimuth.toFixed(2)}<span>° dari Utara</span>`;
+  const qDir = document.getElementById('qDir');
+  if (qDir) qDir.textContent  = dirs[Math.round(qiblaAzimuth/22.5)%16];
+  const qDist = document.getElementById('qDist');
+  if (qDist) qDist.innerHTML   = `${dist.toLocaleString('id-ID')}<span>km</span>`;
   _drawCompassTicks();
 }
 
 function _drawCompassTicks() {
   const t = document.getElementById('compassTicks');
+  if (!t) return;
   if (t.children.length > 0) return;
   let h = '';
   for(let i=0; i<72; i++) {
@@ -129,48 +160,58 @@ function _drawCompassTicks() {
 }
 
 // Handler Kompas Live
-document.getElementById('btnCompass').addEventListener('click', async () => {
-  const btn = document.getElementById('btnCompass');
-  const st = document.getElementById('compassSt');
-  
-  if (isCompassActive) {
-    isCompassActive = false;
-    window.removeEventListener('deviceorientationabsolute', _handleOrientation);
-    window.removeEventListener('deviceorientation', _handleOrientation);
-    btn.innerHTML = '🧭 Aktifkan Kompas Live';
-    st.textContent = 'Kompas dimatikan.';
-    document.getElementById('qHeadRow').style.display = 'none';
-    document.getElementById('compassGlow').style.opacity = '0';
-    renderQibla(); // reset view
-    return;
-  }
-
-  // Request perizinan iOS 13+
-  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-    try {
-      const permission = await DeviceMotionEvent.requestPermission();
-      if (permission === 'granted') {
-        _startCompass();
-      } else {
-        st.textContent = 'Izin akses sensor ditolak.';
-      }
-    } catch (e) {
-      st.textContent = 'Gagal mengakses sensor.';
+const btnCompass = document.getElementById('btnCompass');
+if (btnCompass) {
+  btnCompass.addEventListener('click', async () => {
+    const btn = document.getElementById('btnCompass');
+    const st = document.getElementById('compassSt');
+    
+    if (isCompassActive) {
+      isCompassActive = false;
+      window.removeEventListener('deviceorientationabsolute', _handleOrientation);
+      window.removeEventListener('deviceorientation', _handleOrientation);
+      btn.innerHTML = '🧭 Aktifkan Kompas Live';
+      if (st) st.textContent = 'Kompas dimatikan.';
+      const qhr = document.getElementById('qHeadRow');
+      if (qhr) qhr.style.display = 'none';
+      const glow = document.getElementById('compassGlow');
+      if (glow) glow.style.opacity = '0';
+      renderQibla(); // reset view
+      return;
     }
-  } else {
-    _startCompass();
-  }
-});
+
+    // Request perizinan iOS 13+
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      try {
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission === 'granted') {
+          _startCompass();
+        } else {
+          if (st) st.textContent = 'Izin akses sensor ditolak.';
+        }
+      } catch (e) {
+        if (st) st.textContent = 'Gagal mengakses sensor.';
+      }
+    } else {
+      _startCompass();
+    }
+  });
+}
 
 function _startCompass() {
   if (!window.DeviceOrientationEvent) {
-    document.getElementById('compassSt').textContent = 'Perangkat tidak mendukung sensor kompas.';
+    const st = document.getElementById('compassSt');
+    if (st) st.textContent = 'Perangkat tidak mendukung sensor kompas.';
     return;
   }
   isCompassActive = true;
   document.getElementById('btnCompass').innerHTML = '⏹ Matikan Kompas';
-  document.getElementById('compassSt').textContent = 'Mengkalibrasi... Putar HP angka 8.';
-  document.getElementById('qHeadRow').style.display = 'flex';
+  
+  const st = document.getElementById('compassSt');
+  if (st) st.textContent = 'Mengkalibrasi... Putar HP angka 8.';
+  
+  const qHeadRow = document.getElementById('qHeadRow');
+  if (qHeadRow) qHeadRow.style.display = 'flex';
   
   // Prioritaskan event absolute
   if ('ondeviceorientationabsolute' in window) {
@@ -184,6 +225,7 @@ let lastDialDeg = 0;
 function _handleOrientation(e) {
   if (!isCompassActive) return;
   let heading = null;
+  const st = document.getElementById('compassSt');
   
   if (e.webkitCompassHeading) {
     // iOS
@@ -194,9 +236,13 @@ function _handleOrientation(e) {
   }
   
   if (heading !== null) {
-    document.getElementById('compassSt').textContent = 'Kompas Aktif & Akurat';
-    document.getElementById('qHead').innerHTML = `${heading.toFixed(1)}<span>°</span>`;
-    document.getElementById('compassHeadLbl').textContent = `${Math.round(heading)}°`;
+    if (st) st.textContent = 'Kompas Aktif & Akurat';
+    
+    const qh = document.getElementById('qHead');
+    if (qh) qh.innerHTML = `${heading.toFixed(1)}<span>°</span>`;
+    
+    const chl = document.getElementById('compassHeadLbl');
+    if (chl) chl.textContent = `${Math.round(heading)}°`;
     
     // Perhitungan putaran dial agar mulus tanpa glitch 360->0
     let dialRot = -heading;
@@ -205,58 +251,89 @@ function _handleOrientation(e) {
     else if (diff < -180) dialRot += 360;
     lastDialDeg = dialRot;
     
-    document.getElementById('compassDial').style.transform = `rotate(${dialRot}deg)`;
-    document.getElementById('cpN').style.transform = `rotate(${qiblaAzimuth}deg)`;
+    const cDial = document.getElementById('compassDial');
+    if (cDial) cDial.style.transform = `rotate(${dialRot}deg)`;
+    
+    const cpN = document.getElementById('cpN');
+    if (cpN) cpN.style.transform = `rotate(${qiblaAzimuth}deg)`;
     
     // Deteksi alignment kiblat
     const diffQ = Math.abs((heading + qiblaAzimuth) % 360 - 360) % 360;
     const diffAbs = Math.min(diffQ, 360 - diffQ);
     const glow = document.getElementById('compassGlow');
     
-    if (diffAbs < 3) {
-      glow.style.opacity = '1';
-      glow.style.boxShadow = '0 0 40px var(--green), inset 0 0 20px var(--green)';
-      if ("vibrate" in navigator && diffAbs < 1) navigator.vibrate(50);
-    } else if (diffAbs < 10) {
-      glow.style.opacity = '0.5';
-      glow.style.boxShadow = '0 0 20px var(--gold2), inset 0 0 10px var(--gold2)';
-    } else {
-      glow.style.opacity = '0';
+    if (glow) {
+      if (diffAbs < 3) {
+        glow.style.opacity = '1';
+        glow.style.boxShadow = '0 0 40px var(--green), inset 0 0 20px var(--green)';
+        if ("vibrate" in navigator && diffAbs < 1) navigator.vibrate(50);
+      } else if (diffAbs < 10) {
+        glow.style.opacity = '0.5';
+        glow.style.boxShadow = '0 0 20px var(--gold2), inset 0 0 10px var(--gold2)';
+      } else {
+        glow.style.opacity = '0';
+      }
     }
   } else {
-    document.getElementById('compassSt').textContent = 'Menunggu data sensor kompas...';
+    if (st) st.textContent = 'Menunggu data sensor kompas...';
   }
 }
 
 // ── KONVERSI TANGGAL ──────────────────────────────────
 function renderKonversi() {
   const now = new Date(), y=now.getFullYear(), m=now.getMonth()+1, d=now.getDate();
-  document.getElementById('convM').value     = `${y}-${pZ(m)}-${pZ(d)}`;
-  document.getElementById('todayJD').textContent = jd(y,m,d).toFixed(5);
+  const convM = document.getElementById('convM');
+  if (convM) {
+    convM.value = `${y}-${pZ(m)}-${pZ(d)}`;
+    convM.oninput = _convM2H;
+  }
+  const todayJD = document.getElementById('todayJD');
+  if (todayJD) todayJD.textContent = jd(y,m,d).toFixed(5);
+  
   _convM2H();
-  document.getElementById('convM').oninput    = _convM2H;
-  document.getElementById('convHD').oninput   = _convH2M;
-  document.getElementById('convHMo').onchange = _convH2M;
-  document.getElementById('convHY').oninput   = _convH2M;
-  document.getElementById('convJD').oninput   = () => {
-    const v = +document.getElementById('convJD').value; if (!v) return;
-    const g = jdG(v);
-    document.getElementById('convJDR').textContent =
-      new Date(g.year,g.month-1,g.day).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})
-      +` ${pZ(g.hour)}:${pZ(g.minute)} UT`;
-  };
+  
+  const cHD = document.getElementById('convHD');
+  if (cHD) cHD.oninput = _convH2M;
+  const cHMo = document.getElementById('convHMo');
+  if (cHMo) cHMo.onchange = _convH2M;
+  const cHY = document.getElementById('convHY');
+  if (cHY) cHY.oninput = _convH2M;
+  
+  const convJD = document.getElementById('convJD');
+  if (convJD) {
+    convJD.oninput = () => {
+      const v = +document.getElementById('convJD').value; if (!v) return;
+      const g = jdG(v);
+      const cR = document.getElementById('convJDR');
+      if (cR) cR.textContent =
+        new Date(g.year,g.month-1,g.day).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})
+        +` ${pZ(g.hour)}:${pZ(g.minute)} UT`;
+    };
+  }
 }
 function _convM2H() {
-  const v = document.getElementById('convM').value; if (!v) return;
+  const cM = document.getElementById('convM');
+  if (!cM) return;
+  const v = cM.value; if (!v) return;
   const [y,m,d] = v.split('-').map(Number), h = jdToHijri(jd(y,m,d));
-  document.getElementById('convHR').textContent  = `${h.day} ${HM[h.month-1]} ${h.year} H`;
-  document.getElementById('convHAr').textContent = `${h.day} ${HM_AR[h.month-1]} ${h.year}`;
+  
+  const hr = document.getElementById('convHR');
+  if (hr) hr.textContent = `${h.day} ${HM[h.month-1]} ${h.year} H`;
+  const har = document.getElementById('convHAr');
+  if (har) har.textContent = `${h.day} ${HM_AR[h.month-1]} ${h.year}`;
 }
 function _convH2M() {
-  const d=+document.getElementById('convHD').value, m=+document.getElementById('convHMo').value, y=+document.getElementById('convHY').value;
+  const dNode = document.getElementById('convHD');
+  const mNode = document.getElementById('convHMo');
+  const yNode = document.getElementById('convHY');
+  if (!dNode || !mNode || !yNode) return;
+  
+  const d=+dNode.value, m=+mNode.value, y=+yNode.value;
   if (!d||!m||!y) return;
   const g = jdG(hijriToJD(y,m,d));
-  document.getElementById('convMR').textContent =
+  
+  const mr = document.getElementById('convMR');
+  if (mr) mr.textContent =
     new Date(g.year,g.month-1,g.day).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
 }
 
@@ -265,9 +342,19 @@ function renderImsakiyah() {
   const now=new Date(), y=now.getFullYear(), mo=now.getMonth()+1;
   const dInMonth = new Date(y, mo, 0).getDate();
   const hFirst   = jdToHijri(jd(y, mo, 1));
-  document.getElementById('imsakTtl').textContent = now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
-  document.getElementById('imsakSub').textContent =
-    `${HM[hFirst.month-1]} ${hFirst.year} H | ${document.getElementById('inpMarkaz').value}`;
+  
+  const it = document.getElementById('imsakTtl');
+  if (it) it.textContent = now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  
+  const is = document.getElementById('imsakSub');
+  if (is) {
+    const markaz = document.getElementById('inpMarkaz') ? document.getElementById('inpMarkaz').value : '';
+    is.textContent = `${HM[hFirst.month-1]} ${hFirst.year} H | ${markaz}`;
+  }
+  
+  const tbl = document.getElementById('imsakTable');
+  if (!tbl) return;
+  
   // Kolom: Tgl | Hijri | Imsak | Subuh | Syuruq | Dhuha | Dzuhur | Ashar | Maghrib | Isya
   let html = `<thead><tr><th class="kc">Tgl</th><th class="kc">Hijri</th>`+
              `<th>Imsak</th><th>Subuh</th><th>Syuruq</th><th>Dhuha</th><th>Dzuhur</th>`+
@@ -280,11 +367,14 @@ function renderImsakiyah() {
       `<td>${p.imsak}</td><td>${p.fajr}</td><td>${p.syuruq}</td><td>${p.dhuha}</td>`+
       `<td>${p.dhuhr}</td><td>${p.ashr}</td><td>${p.maghrib}</td><td>${p.isya}</td></tr>`;
   }
-  document.getElementById('imsakTable').innerHTML = html + '</tbody>';
+  tbl.innerHTML = html + '</tbody>';
 }
 
 // ── EPHEMERIS ────────────────────────────────────────
 function renderEphemeris() {
+  const tbl = document.getElementById('ephTable');
+  if (!tbl) return;
+
   const now = new Date();
   const j0  = jd(now.getFullYear(), now.getMonth()+1, now.getDate(), now.getHours()-TZ, now.getMinutes());
   const s = sunPos(j0), m = moonPos(j0), T = (j0 - 2451545) / 36525;
@@ -302,16 +392,16 @@ function renderEphemeris() {
   ];
   let html = `<thead><tr><th class="kc">Parameter</th><th>☀ Matahari</th><th>🌙 Bulan</th></tr></thead><tbody>`;
   rows.forEach(r => html += `<tr><td class="kc">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`);
-  document.getElementById('ephTable').innerHTML = html + '</tbody>';
+  tbl.innerHTML = html + '</tbody>';
 }
 
 // ── Master render ─────────────────────────────────────
 function renderAll() {
-  renderPrayer();
-  renderHijri();
-  renderMoon();
-  renderQibla();
-  renderKonversi();
-  renderImsakiyah();
-  renderEphemeris();
+  try { renderPrayer(); } catch (e) {}
+  try { renderHijri(); } catch (e) {}
+  try { renderMoon(); } catch (e) {}
+  try { renderQibla(); } catch (e) {}
+  try { renderKonversi(); } catch (e) {}
+  try { renderImsakiyah(); } catch (e) {}
+  try { renderEphemeris(); } catch (e) {}
 }
