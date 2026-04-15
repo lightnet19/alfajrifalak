@@ -1,6 +1,10 @@
 /**
  * math.js — Konstanta, helper trigonometri, format, Julian Day, Kalender Hijri
- * Al-Fajri v2.3 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.4.1 | Lembaga Falakiyah PCNU Kencong
+ *
+ * CHANGELOG v2.4.1:
+ * - REWRITE hijriToJD using standard Islamic calendar algorithm (Meeus/Kuwaiti)
+ *   to fix the 1-month shift bug (e.g. Dzulqa'dah 1447 mapping to May instead of April).
  */
 'use strict';
 
@@ -89,13 +93,16 @@ const PASARAN = ['Legi','Pahing','Pon','Wage','Kliwon'];
 
 function isHLeap(y) { return [2,5,7,10,13,15,18,21,24,26,29].includes(y % 30); }
 
-/** JD → Hijriyah {year,month,day} */
+/** 
+ * JD (UT) → Hijriyah {year,month,day}
+ * Based on the tabular Islamic calendar (arithmetic approximation).
+ */
 function jdToHijri(jd0) {
   const z=Math.floor(jd0)+0.5, N=z-1948438.5;
   const cyc=Math.floor(N/10631), rem=N-10631*cyc, jv=Math.floor((rem-29.5001)/354.3671);
   const hY=30*cyc+jv+1;
 
-let jDay=Math.floor(rem-354.3671*jv);
+  let jDay=Math.floor(rem-354.3671*jv);
   const md=[0,30,29,30,29,30,29,30,29,30,29,30,29];
   for (let m=1; m<=12; m++) {
     const days=(m===12&&isHLeap(hY))?30:md[m];
@@ -107,16 +114,17 @@ let jDay=Math.floor(rem-354.3671*jv);
 
 /**
  * Hijriyah → JD
- * PENTING: gunakan hy dan hm LANGSUNG (jangan hy-1/hm-1 yang error 384 hari!)
+ * REWRITE v2.4.1: Using standard 30-year cycle arithmetic
  */
 function hijriToJD(hy, hm, hd) {
-  return Math.floor((11*hy+3)/30) + 354*hy + 30*hm
-       - Math.floor((hm-1)/2) + hd + 1948440 - 385;
+  return 1948439.5 + Math.floor((10631 * hy - 10617) / 30)
+      + Math.floor((325 * hm - 320) / 11) + hd - 1;
 }
 
 /** JD → Weton Jawa */
 function weton(jd0) {
   const g=jdG(jd0), dow=new Date(g.year,g.month-1,g.day).getDay();
+  // JD 1948438.5 = Thu = Pahing (1)
   const p=((Math.floor(jd0+0.5)+2)%5+5)%5;
   return `${DAY_ID[dow]} ${PASARAN[p]}`;
 }
