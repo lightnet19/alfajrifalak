@@ -1,8 +1,14 @@
 /**
  * astro.js — Posisi Matahari & Bulan, Topocentric, Refraksi, Sunset, Ijtima
  * Referensi: Jean Meeus — Astronomical Algorithms, 2nd ed.
- * Al-Fajri v2.3 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.4.0 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js
+ *
+ * CHANGELOG v2.4.0:
+ *  - REWRITE calcSunSet & calcMoonSet: transit formula was fundamentally wrong
+ *    (had +180 offset causing ~6h error, returning noon instead of sunset).
+ *    New implementation uses Meeus Ch.15 approach with GMST at 0h UT.
+ *  - obsBase in hilal.js now uses LOCAL date (jdG with tz offset).
  */
 'use strict';
 
@@ -12,7 +18,6 @@ function obliquity(T) {
 }
 
 // ── DeltaT (TT−UT1) detik ────────────────────────────
-// Cocok dengan Kanzul Falak (72.14s utk 2026)
 function deltaT(year) {
   if (year >= 2015 && year < 2040) return 67.0 + 0.467*(year - 2015);
   if (year >= 2005)  return 64.69 + 0.2952*(year-2005) + 0.01422*(year-2005)**2;
@@ -109,16 +114,14 @@ function moonPos(jd0) {
 
 // ══════════════════════════════════════════════════════
 //  KOREKSI TOPOSENTRIK — Meeus Ch.40
-//  PENTING: rhoSinPhi/rhoCosphi DIMENSIONLESS (tidak dikali R2D)
-//           dRA via Math.atan2; Dec via atan2 (bukan arcsin)
 // ══════════════════════════════════════════════════════
 function topoCorrect(obj, lat, lng, elev, jd0) {
   const T=(jd0-2451545)/36525;
   const GMST=fix(280.46061837+360.98564736629*(jd0-2451545)+0.000387933*T*T-T*T*T/38710000);
   const LST=fix(GMST+lng), H=LST-obj.RA;
   const latR=lat*D2R, u=Math.atan(0.99664719*Math.tan(latR));
-  const rhoS=0.99664719*Math.sin(u)+(elev/6378140)*Math.sin(latR);  // dimensionless
-  const rhoC=Math.cos(u)           +(elev/6378140)*Math.cos(latR);  // dimensionless
+  const rhoS=0.99664719*Math.sin(u)+(elev/6378140)*Math.sin(latR);
+  const rhoC=Math.cos(u)           +(elev/6378140)*Math.cos(latR);
   const sinHP=Math.sin(obj.HP*D2R);
   const dRA  =Math.atan2(-rhoC*sinHP*sin(H), cos(obj.Dec)-rhoC*sinHP*cos(H))*R2D;
   const Dec_t=Math.atan2((sin(obj.Dec)-rhoS*sinHP)*Math.cos(dRA*D2R),
@@ -143,7 +146,6 @@ function refraction(altDeg) {
 }
 
 // ── Dip Cakrawala akibat ketinggian ─────────────────
-// dip = 1.76' × √h  → derajat = 1.76×√h/60
 function horizDip(elev) {
   return elev > 0 ? 1.76 * Math.sqrt(elev) / 60 : 0;
 }
@@ -154,42 +156,126 @@ function elongation(RA1, Dec1, RA2, Dec2) {
 }
 
 // ══════════════════════════════════════════════════════
-//  MATAHARI TERBENAM — iteratif, konvergen ≤15 iterasi
+//  MATAHARI TERBENAM — Meeus Ch.15 approach
+//  dateJD = JD at 0h UT of the LOCAL date (midnight UT of the
+//           Gregorian date you want sunset for).
+//  Returns JD (UT) of sunset, or null if sun doesn't set.
+//
+//  FIX v2.4.0: Complete rewrite. The old formula had
+//  `(fix(RA-GMST-lng)+180)/360*24` which added a
+//  spurious +180° offset, causing the "transit" to point
+//  to the anti-meridian (midnight) instead of solar noon.
+//  This made the iterative solver converge to ~11:15 LT
+//  (near local noon) instead of ~17:15 LT (actual sunset).
 // ══════════════════════════════════════════════════════
 function calcSunSet(dateJD, lat, lng, tz, elev) {
-  const altT = -(0.8333 + 0.0347*Math.sqrt(elev||0));
-  let jE = dateJD + (18-tz)/24;
-  for (let i=0; i<15; i++) {
-    const s=sunPos(jE);
-    const cosH=(sin(altT)-sin(lat)*sin(s.Dec))/(cos(lat)*cos(s.Dec));
-    if (Math.abs(cosH)>1) return null;
-    const T=(jE-2451545)/36525;
-    const GMST=fix(280.46061837+360.98564736629*(jE-2451545)+0.000387933*T*T);
-    const transit=(fix(s.RA-GMST-lng)+180)/360*24, H_set=acos(cosH)/15;
-    const nj=dateJD+(transit+H_set-tz)/24;
-    if (Math.abs(nj-jE)<1e-7) break;
-    jE=nj;
+  // Target altitude for sunset (including geometric dip)
+  const altT = -(0.8333 + 0.0347 * Math.sqrt(elev || 0));
+
+  // GMST at 0h UT of this JD day (= dateJD, which should be integer+0.5)
+  const T0 = (dateJD - 2451545) / 36525;
+  const GMST0 = fix(280.46061837 + 360.98564736629 * (dateJD - 2451545)
+                + 0.000387933 * T0 * T0 - T0 * T0 * T0 / 38710000);
+
+  // Initial sun position at approximate noon
+  const s0 = sunPos(dateJD + 0.5);  // ~noon UT
+
+  // Hour angle at setting
+  const cosH0 = (sin(altT) - sin(lat) * sin(s0.Dec)) / (cos(lat) * cos(s0.Dec));
+  if (Math.abs(cosH0) > 1) return null;  // no sunset
+  const H0 = acos(cosH0);  // degrees
+
+  // Approximate transit time in UT hours
+  // transit = (RA - GMST0 - lng) / 360 * 24, normalised to [0,24)
+  let m0 = ((s0.RA - GMST0 - lng) % 360 + 360) % 360 / 360 * 24;
+
+  // Setting time in UT hours
+  let mSet = m0 + H0 / 15;  // H0 in degrees → hours
+
+  // Normalise to [0, 36) to allow for next-day wrap
+  mSet = ((mSet % 24) + 24) % 24;
+
+  // Convert to JD
+  let jE = dateJD + mSet / 24;
+
+  // Iterate to refine (3-5 iterations normally sufficient)
+  for (let i = 0; i < 12; i++) {
+    const s = sunPos(jE);
+    const h = toHoriz(s.RA, s.Dec, lat, lng, jE);
+    // Newton-like correction: dAlt/dt ≈ 15°/hr × cos(Dec) × cos(lat) × sin(H) in alt
+    // Simpler: just shift by altitude error / rate
+    const dH = (sin(altT) - sin(lat) * sin(s.Dec)) / (cos(lat) * cos(s.Dec));
+    if (Math.abs(dH) > 1) return null;
+    const Hset = acos(dH);  // target hour angle in degrees
+
+    // Current GMST
+    const Ti = (jE - 2451545) / 36525;
+    const GMSTi = fix(280.46061837 + 360.98564736629 * (jE - 2451545)
+                  + 0.000387933 * Ti * Ti - Ti * Ti * Ti / 38710000);
+    const LSTi = fix(GMSTi + lng);
+    const Hi = ((LSTi - s.RA) % 360 + 360) % 360;  // current hour angle [0,360)
+
+    // We want Hi = Hset (setting, western side)
+    let dAngle = Hset - Hi;
+    if (dAngle > 180) dAngle -= 360;
+    if (dAngle < -180) dAngle += 360;
+
+    // Convert angle to time: 360° = 24h sidereal ≈ 23.9344h solar
+    const dt = dAngle / 360 * 0.99727;  // days (sidereal→solar correction)
+    jE += dt;
+
+    if (Math.abs(dt) < 1e-8) break;  // converged (~0.001 seconds)
   }
+
   return jE;
 }
 
 // ══════════════════════════════════════════════════════
-//  BULAN TERBENAM — iteratif
+//  BULAN TERBENAM — same approach as sunset
 // ══════════════════════════════════════════════════════
 function calcMoonSet(dateJD, lat, lng, tz, elev) {
-  const altT = -(0.5 + 0.0347*Math.sqrt(elev||0));
-  let jE = dateJD + (18.5-tz)/24;
-  for (let i=0; i<15; i++) {
-    const m=moonPos(jE);
-    const cosH=(sin(altT)-sin(lat)*sin(m.Dec))/(cos(lat)*cos(m.Dec));
-    if (Math.abs(cosH)>1) return null;
-    const T=(jE-2451545)/36525;
-    const GMST=fix(280.46061837+360.98564736629*(jE-2451545)+0.000387933*T*T);
-    const transit=(fix(m.RA-GMST-lng)+180)/360*24, H_set=acos(cosH)/15;
-    const nj=dateJD+(transit+H_set-tz)/24;
-    if (Math.abs(nj-jE)<1e-7) break;
-    jE=nj;
+  const altT = -(0.5 + 0.0347 * Math.sqrt(elev || 0));
+
+  // Initial moon position
+  const m0 = moonPos(dateJD + 0.5);  // ~noon UT
+
+  const cosH0 = (sin(altT) - sin(lat) * sin(m0.Dec)) / (cos(lat) * cos(m0.Dec));
+  if (Math.abs(cosH0) > 1) return null;
+  const H0 = acos(cosH0);
+
+  const T0 = (dateJD - 2451545) / 36525;
+  const GMST0 = fix(280.46061837 + 360.98564736629 * (dateJD - 2451545)
+                + 0.000387933 * T0 * T0 - T0 * T0 * T0 / 38710000);
+
+  let mt0 = ((m0.RA - GMST0 - lng) % 360 + 360) % 360 / 360 * 24;
+  let mSet = mt0 + H0 / 15;
+  mSet = ((mSet % 24) + 24) % 24;
+
+  let jE = dateJD + mSet / 24;
+
+  for (let i = 0; i < 15; i++) {
+    const m = moonPos(jE);
+    const dH = (sin(altT) - sin(lat) * sin(m.Dec)) / (cos(lat) * cos(m.Dec));
+    if (Math.abs(dH) > 1) return null;
+    const Hset = acos(dH);
+
+    const Ti = (jE - 2451545) / 36525;
+    const GMSTi = fix(280.46061837 + 360.98564736629 * (jE - 2451545)
+                  + 0.000387933 * Ti * Ti - Ti * Ti * Ti / 38710000);
+    const LSTi = fix(GMSTi + lng);
+    const Hi = ((LSTi - m.RA) % 360 + 360) % 360;
+
+    let dAngle = Hset - Hi;
+    if (dAngle > 180) dAngle -= 360;
+    if (dAngle < -180) dAngle += 360;
+
+    // Moon moves ~13°/day vs stars, so sidereal→synodic correction differs
+    const dt = dAngle / (360 + 13.2) * 1.0;  // approximate days
+    jE += dt;
+
+    if (Math.abs(dt) < 1e-8) break;
   }
+
   return jE;
 }
 
