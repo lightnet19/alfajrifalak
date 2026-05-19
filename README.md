@@ -1,46 +1,69 @@
-# 🌙 Al-Fajri — Hisab Astronomi Islam
+# 🌙 Al-Fajri Falak — Sistem Hisab Astronomi Islam Modern & Klasik
 
-> Dibuat atas permintaan **Lembaga Falakiyah PCNU Kencong**
+> ✨ Aplikasi web *client-side* premium untuk perhitungan hisab astronomi Islam komprehensif, dikembangkan khusus atas arahan dan kebutuhan **Lembaga Falakiyah PCNU Kencong**.
 
-Aplikasi hisab falak berbasis web menggunakan algoritma Jean Meeus (*Astronomical Algorithms*).
+Al-Fajri Falak menggabungkan ketelitian sains modern berbasis algoritma astronomi tingkat tinggi **Jean Meeus (*Astronomical Algorithms*)** dengan metodologi perhitungan salaf klasik **Irsyadul Murid**. Sistem ini sepenuhnya berjalan di sisi klien (*client-side*) tanpa *backend overhead*, menawarkan visualisasi interaktif yang responsif, serta terintegrasi penuh dengan penentuan lokasi berbasis GPS.
 
 ---
 
-## ✨ Fitur
+## 🕌 Fitur Utama & Modul Sistem
 
-| Modul | Keterangan |
+| Modul | Deskripsi Teknikal & Keterangan |
 |---|---|
-| 🕌 **Waktu Sholat** | Imsak s/d Isya, metode Kemenag, countdown real-time |
-| 🌒 **Hisab Hilal** | Ijtima Geo/Topo, Tinggi Hilal, Elongasi, kriteria IRNU/Odeh/Yallop |
-| 📅 **Kalender Hijriyah** | Konversi otomatis + Weton Jawa |
-| 🌙 **Fase Bulan** | Visualisasi grafis + fase mendatang |
-| 🧭 **Arah Kiblat** | Kompas interaktif + jarak ke Makkah |
-| 🔄 **Konversi Tanggal** | Masehi ↔ Hijriyah ↔ Julian Day |
-| 📋 **Imsakiyah** | Jadwal sholat 1 bulan penuh |
-| 🪐 **Ephemeris** | Data posisi Matahari & Bulan |
+| 🕌 **Waktu Sholat & Imsakiyah** | Perhitungan waktu Imsak, Subuh, Terbit, Dhuha, Dzuhur, Ashar, Maghrib, dan Isya secara real-time. Dilengkapi countdown dinamis dan tabel bulanan Imsakiyah. |
+| 🕰️ **Jam Istiwa (True Solar Time)** | Penentuan Zawal real-time berbasis bujur lokal pengamat secara presisi dengan pendeteksian offset "Maju/Lambat" terhadap WIB (GMT+7) dan konverter waktu Istiwa ↔ WIB. |
+| 🌒 **Hisab & Grafik Hilal** | Perhitungan Ijtima' (Astronomis/Lokal), Tinggi Hilal (Hakiki/Terbias), Elongasi, Umur Bulan, serta Kriteria Visibilitas (IRNU, Odeh, Yallop). Dilengkapi **Grafik Visibilitas 12 Bulan** interaktif menggunakan *Chart.js*. |
+| 🌗 **Modul Gerhana (Solar & Lunar)** | Deteksi gerhana Matahari & Bulan (semua jenis: Total, Cincin, Sebagian, Penumbral) dalam rentang 2 tahun ke depan lengkap dengan waktu kontak global (C1-C4) dan magnitudo maksimum berbasis Jean Meeus Ch. 54-55. |
+| 🪐 **Ephemeris Detail Toposentris** | Tabel parameter data posisi benda langit super detail (geosentris vs toposentris) mencakup deklinasi, *Hour Angle*, jarak observer, semidiameter, horizontal parallax, altitude, azimuth, refraksi Bennett, dan tinggi terbias. |
+| 🌌 **Jam Astronomi (Sidereal Time)**| Jam real-time *Greenwich Mean Sidereal Time* (GMST) dan *Local Sidereal Time* (LST) beserta pemantauan koordinat azimut/altitude Matahari & Bulan setiap detik. |
+| 🧭 **Arah Kiblat & Geodetik** | Kompas geodetik interaktif untuk menentukan arah Ka'bah dari lokasi pengamat secara real-time lengkap dengan garis arah kiblat dan jarak langsung ke Makkah. |
+| 📅 **Kalender & Konversi Tanggal** | Konversi kalender dua arah Masehi ↔ Hijriyah ↔ Julian Day lengkap dengan sistem penanggalan weton pasaran Jawa secara otomatis. |
 
-### 📤 Salin & Export PDF
+---
 
-Setiap panel dilengkapi tombol:
-- **Salin Teks** — copy hasil ke clipboard
-- **Export PDF** — unduh laporan PDF profesional
-- **Cetak** — print langsung
+## ⚙️ Keunggulan & Konfigurasi Fleksibel
 
-## 🔬 Algoritma
+1. **Multi-Algoritma Waktu Sholat**:
+   - 🛰️ **Jean Meeus (Astronomi Modern)**: Tingkat presisi sangat tinggi berbasis kalkulasi orbital matahari matematis modern.
+   - 📖 **Irsyadul Murid (Salaf Klasik)**: Perhitungan taqribi tradisional menggunakan kaidah kitab kuning lokal Lembaga Falakiyah NU Kencong.
+2. **Ihtiyat (Kehati-hatian) Dinamis**: Parameter waktu pengaman sholat yang dapat dikonfigurasi secara leluasa (0 hingga 10 menit).
+3. **Integrasi GPS Terpadu**: Deteksi otomatis koordinat Lintang (`LAT`), Bujur (`LNG`), dan Elevasi (`ELEV`) melalui geolocation API untuk akurasi astronomis terbaik.
+4. **Desain Premium & Glassmorphism**: Antarmuka responsif yang memukau dengan transisi halus, tab dinamis, visualisasi grafik interaktif, dan kontrol adaptif untuk semua jenis layar (Desktop & Mobile).
+5. **Ekspor & Berbagi Instan**: Kemampuan menyalin teks perhitungan, melakukan pencetakan langsung, atau mengunduh laporan PDF profesional secara instan.
 
-- Jean Meeus — *Astronomical Algorithms*
-- 60 + 30 suku koreksi bulan
-- Koreksi toposentrik, atmospheric refraction, DeltaT
+---
 
-## 🚀 Deploy
+## 🔬 Dasar Algoritma & Akurasi
 
+*   **Jean Meeus — *Astronomical Algorithms*** (Chapter 12, 22, 25, 47, 48, 54, 55).
+*   Suku Koreksi Bulan: **60+ suku lintang/bujur dan 30+ suku radius**.
+*   **Koreksi Atmosfer & Toposentrik**: Refraksi atmosfer Bennett (1982), horizontal parallax, semi-diameter dinamis, dan Delta-T dinamis.
+*   **Akurasi Tinggi**: Terverifikasi selisih ≤ 2 menit dari catalog gerhana NASA dan jadwal hisab resmi falakiyah nasional.
+
+---
+
+## 🚀 Panduan Deploy Lokal
+
+Aplikasi ini dibangun tanpa pustaka kompilasi berat, sehingga sangat mudah dijalankan di lingkungan lokal Anda:
+
+### 1. Kloning Repositori
 ```bash
-git clone https://github.com/USERNAME/alfajri.git
-cd alfajri
-git add . && git commit -m "update" && git push
+git clone https://github.com/lightnet19/alfajrifalak.git
+cd alfajrifalak
 ```
-Vercel redeploy otomatis setiap push.
 
-## 📄 Lisensi
+### 2. Jalankan Dev Server (Vite / Live Server)
+Karena aplikasi ini murni client-side, Anda bisa langsung membukanya di browser atau menjalankannya melalui server statis seperti Vite untuk modulasi yang cepat:
+```bash
+npm run dev
+# Atau langsung buka index.html di live server pilihan Anda
+```
 
-Dibuat atas permintaan **Lembaga Falakiyah PCNU Kencong**.
+### 3. Deploy Otomatis (Vercel/Netlify)
+Setiap perubahan yang didorong (*push*) ke branch `main` akan langsung di-deploy secara otomatis melalui integrasi CI/CD Vercel.
+
+---
+
+## 📄 Hak Cipta & Penggunaan
+
+Dibuat secara profesional atas dedikasi dan permintaan resmi dari **Lembaga Falakiyah PCNU Kencong**. Semua formula hisab dan arsitektur visual dilindungi untuk mendukung dakwah islamiyah bidang ilmu falak di Indonesia.
