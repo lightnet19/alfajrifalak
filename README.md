@@ -65,6 +65,62 @@ Setiap perubahan yang didorong (*push*) ke branch `main` akan langsung di-deploy
 
 ---
 
+## 🔌 Integrasi & API SDK (Client-Side)
+
+Karena aplikasi ini berjalan 100% di sisi klien (*client-side*), Al-Fajri menyediakan tiga cara modular bagi pengembang aplikasi lain untuk mengintegrasikan atau mengambil data perhitungan falakiyah secara gratis dan instan:
+
+### 1. Deep Link & Query Parameter API
+Anda dapat mengarahkan pengguna atau membuka halaman Al-Fajri dengan parameter kustom via URL. Sistem akan otomatis mengisi form, melakukan kalkulasi, dan memicu tab yang diinginkan:
+```
+https://alfajri-falak.vercel.app/?lat=-8.2664&lng=113.4203&elev=11&tz=7&markaz=Kencong&algo=irsyadulmurid&ihtiyat=3&tab=istiwa
+```
+*   **Parameter yang didukung**: `lat`, `lng`, `elev`, `tz`, `markaz` (di-encode), `algo` (`jeanmeeus`/`irsyadulmurid`), `ihtiyat` (0-10), dan `tab` (`sholat`/`hilal`/`istiwa`/`gerhana`/`astroclock`/dll).
+
+### 2. JavaScript SDK (`window.AlFajriAPI`)
+Jika Anda memuat skrip Al-Fajri secara langsung atau menulis skrip konsol, Anda dapat mengakses fungsi kalkulasi astronomi siap pakai melalui namespace global:
+```javascript
+// Mengambil jadwal sholat hari ini
+const sholat = AlFajriAPI.getPrayerTimes({ lat: -8.2664, lng: 113.4203 });
+console.log(sholat.jadwal.subuh); // Output: "04:12"
+
+// Mengambil selisih & data Jam Istiwa
+const istiwa = AlFajriAPI.getIstiwa({ lat: -8.2664, lng: 113.4203 });
+console.log(istiwa.koreksi.totalSelisihMenit); // Output: 34 (menit)
+
+// Mengambil koordinat astronomi realtime (LST/GST, Sun/Moon Azimuth & Altitude)
+const astro = AlFajriAPI.getAstroClock();
+console.log(astro.localSiderealTime);
+```
+
+### 3. Iframe postMessage Bridge
+Jika Anda ingin mengambil data secara dinamis dari website lain tanpa memicu *Cross-Origin (CORS)*, Anda dapat menyematkan Al-Fajri dalam `iframe` tersembunyi dan melakukan query data falak berbasis JSON:
+```javascript
+const iframe = document.createElement('iframe');
+iframe.src = "https://alfajri-falak.vercel.app/";
+iframe.style.display = "none";
+document.body.appendChild(iframe);
+
+// Kirim request setelah iframe siap
+iframe.onload = () => {
+  iframe.contentWindow.postMessage({
+    source: 'AlFajriAPI_Request',
+    requestId: 'req-sholat-01',
+    method: 'getPrayerTimes',
+    params: { lat: -8.2664, lng: 113.4203, algo: 'irsyadulmurid' }
+  }, '*');
+};
+
+// Dengar respon JSON balik
+window.addEventListener('message', (event) => {
+  const res = event.data;
+  if (res && res.source === 'AlFajriAPI_Response' && res.requestId === 'req-sholat-01') {
+    console.log("Data diterima:", res.data);
+  }
+});
+```
+
+---
+
 ## 📄 Hak Cipta & Penggunaan
 
 Dibuat secara profesional atas dedikasi dan permintaan resmi dari **Lembaga Falakiyah PCNU Kencong**. Semua formula hisab dan arsitektur visual dilindungi untuk mendukung dakwah islamiyah bidang ilmu falak di Indonesia.
