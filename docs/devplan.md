@@ -11,12 +11,12 @@
 |---|---|---|
 | v2.4.x | Fondasi (Sholat, Hilal, Kiblat, Ephemeris, Imsakiyah) | ✅ Selesai |
 | v2.5.0 | Jam Istiwa (Waktu Hakiki) | ✅ Selesai |
-| v2.6.0 | Gerhana Matahari & Bulan | 📋 Direncanakan |
-| v2.7.0 | Grafik Visibilitas Hilal | 📋 Direncanakan |
-| v2.8.0 | Jam Astronomi & Sinkronisasi Kalender | 📋 Direncanakan |
-| v2.9.0 | Ephemeris Detail (Geosentris & Toposentris) | 📋 Direncanakan |
-| v3.0.0 | Multi-Algoritma | 📋 Direncanakan |
-| v3.x | PWA, Qodho, Tasbih, dll. | 💡 Ide |
+| v2.6.0 | Gerhana Matahari & Bulan | ✅ Selesai |
+| v2.7.0 | Grafik Visibilitas Hilal | ✅ Selesai |
+| v2.8.0 | Jam Astronomi & Sinkronisasi Kalender | ✅ Selesai |
+| v2.9.0 | Ephemeris Detail (Geosentris & Toposentris) | ✅ Selesai |
+| v3.0.0 | Multi-Algoritma | ✅ Selesai |
+| v3.x | PWA, Qodho, Tasbih, dll. | 📋 Direncanakan |
 
 ---
 
@@ -24,21 +24,21 @@
 
 ```
 public/
-├── index.html          ← SPA entry point (MODIFIKASI per versi)
+├── index.html          ← SPA entry point [STABIL]
 ├── css/
-│   └── style.css       ← Design system (MODIFIKASI per versi)
+│   └── style.css       ← Design system [STABIL]
 └── js/
     ├── math.js         ← Layer 1: Util (konversi, format, JD) [STABIL]
-    ├── astro.js        ← Layer 2: Jean Meeus core [MODIFIKASI jika perlu]
+    ├── astro.js        ← Layer 2: Jean Meeus core [STABIL]
     ├── prayer.js       ← Layer 3: Waktu sholat + cache [STABIL]
     ├── hilal.js        ← Layer 3: Hisab awal bulan [STABIL]
-    ├── eclipse.js      ← Layer 3: Gerhana [BARU v2.6.0]
-    ├── ui.js           ← Layer 4: Render semua panel [MODIFIKASI per versi]
-    ├── copypdf.js      ← Layer 5: Export [MODIFIKASI per versi]
-    ├── istiwa.js       ← Layer 5: Jam Istiwa [v2.5.0 ✅]
-    ├── hilalchart.js   ← Layer 5: Grafik hilal [BARU v2.7.0]
-    ├── astroclock.js   ← Layer 5: Jam Astronomi [BARU v2.8.0]
-    └── main.js         ← Layer 6: Init (HARUS TERAKHIR) [MODIFIKASI per versi]
+    ├── eclipse.js      ← Layer 3: Gerhana [STABIL]
+    ├── ui.js           ← Layer 4: Render semua panel [STABIL]
+    ├── copypdf.js      ← Layer 5: Export [STABIL]
+    ├── istiwa.js       ← Layer 5: Jam Istiwa [STABIL]
+    ├── hilalchart.js   ← Layer 5: Grafik hilal [STABIL]
+    ├── astroclock.js   ← Layer 5: Jam Astronomi [STABIL]
+    └── main.js         ← Layer 6: Init (HARUS TERAKHIR) [STABIL]
 
 docs/
 ├── prd.md              ← Product Requirements [UPDATED ✅]

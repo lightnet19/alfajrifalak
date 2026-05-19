@@ -130,10 +130,10 @@ Menjadi referensi digital falakiyah berbasis web paling lengkap dan akurat di In
 - Koordinat rectangular (x,y,z) dalam ICRS
 - Data parallax & refraksi toposentris
 
-### 🟡 v3.0.0 — Multi-Algoritma
-- Opsi algoritma waktu sholat: Jean Meeus / Irsyadul Murid
-- Hisab hilal: Ad-Durrul Aniq (tabel taqribi)
-- Ihtiyat (kehati-hatian) konfigurasi pengguna
+### ✅ v3.0.0 (SELESAI) — Multi-Algoritma
+- Opsi algoritma waktu sholat: Jean Meeus (Astronomi Modern) / Irsyadul Murid (Salaf)
+- Penambahan input Ihtiyat dinamis (0-10 menit) yang terintegrasi di UI
+- Custom compound caching system untuk menghindari UI freeze saat parameter berubah
 
 ### 🟢 v3.x — Fitur Tambahan
 - Qodho Sholat (kalkulasi sholat yang perlu diqodho)
@@ -272,7 +272,7 @@ Menjadi referensi digital falakiyah berbasis web paling lengkap dan akurat di In
 | v2.7.0 | Grafik Hilal | Grafik tampil, data tinggi hilal ≤ 0.01° vs Jean Meeus |
 | v2.8.0 | Jam Astronomi | GST/LST ≤ 1 detik vs referensi IERS |
 | v2.9.0 | Ephemeris Detail | Data geosentris & toposentris lengkap & akurat |
-| v3.0.0 | Multi-Algoritma | Semua algoritma bisa dipilih, hasil berbeda dinamis |
+| v3.0.0 | Multi-Algoritma | Semua algoritma bisa dipilih, hasil berbeda dinamis, Ihtiyat dinamis berfungsi ✅ |
 
 ---
 

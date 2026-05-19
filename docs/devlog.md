@@ -25,7 +25,7 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
 - [x] **Fase 2:** Menambahkan Tab dan Panel Istiwa di `public/index.html`.
 - [x] **Fase 3:** Menambahkan styling khusus untuk komponen Istiwa di `public/css/style.css`.
 - [x] **Fase 4:** Modifikasi `public/js/main.js` dan `public/js/ui.js` untuk mengaitkan event tick dan render.
-- [ ] **Fase 5:** Pengujian dan verifikasi kalkulasi Jam Istiwa.
+- [x] **Fase 5:** Pengujian dan verifikasi kalkulasi Jam Istiwa.
 
 ## [2026-05-19] - Implementasi Kode
 - **Status:** Selesai (Fase 1-4)
@@ -119,3 +119,19 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - Implementasi refraksi atmosfer Bennett (1982) via `refraction()` dari `astro.js`.
 - **Catatan Teknis:**
   - Mengubah header tabel menjadi sub-header `colspan` ganda agar data parameter Geosentris & Toposentris Matahari dan Bulan bersanding sempurna dan sangat mudah dibaca.
+
+---
+
+## [2026-05-19] - v3.0.0 Multi-Algoritma & Ihtiyat Dinamis
+- **Status:** Selesai ✅
+- **Versi:** v3.0.0
+- **File Dimodifikasi:**
+  - `public/js/prayer.js` — Implementasi algoritma salaf Irsyadul Murid (taqribi klasik), custom compound caching system, penambahan parameter Ihtiyat (kehati-hatian) dinamis 0-10 menit.
+  - `public/index.html` — Tambah dropdown pilihan Algoritma Sholat ("Jean Meeus (Astronomi Modern)", "Irsyadul Murid (Salaf Taqribi)") dan input Ihtiyat dinamis di atas tabel jadwal sholat. Bump versi ke v3.0.0.
+  - `public/js/ui.js` — Penanganan event handler saat dropdown algoritma atau input ihtiyat berubah untuk memicu kalkulasi ulang secara instan.
+  - `public/css/style.css` — Penambahan layout & styling form kontrol yang cantik untuk pilihan algoritma dan ihtiyat sholat.
+- **Algoritma:**
+  - *Jean Meeus*: Metode astronomi modern dengan presisi tinggi.
+  - *Irsyadul Murid*: Metode salaf taqribi klasik menggunakan rumus ta'dil bujur & lintang dengan tinggi matahari tertentu (Fajr -20°, Asr As-Syadzili, Isha -18°).
+- **Catatan Teknis:**
+  - Sistem cache terkomposisi menggunakan key string `lat|lng|year|month|day|elev|algo|ihtiyat` untuk menghindari overhead penghitungan ulang saat user bernavigasi.

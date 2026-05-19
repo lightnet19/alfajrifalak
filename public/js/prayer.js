@@ -20,7 +20,10 @@ function prayerTimes(year, month, day, lat, lng, tz, elev) {
   const j0   = jd(year, month, day, 12 - tz, 0, 0);   // noon UT
   const sun  = sunPos(j0);
   const noon = 12 - lng / 15 - sun.EqT / 60 + tz;     // jam transit surya (LT)
-  const ec   = 0.8333 + 0.0347 * Math.sqrt(elev || 0); // koreksi elevasi
+
+  const isIrsyad = (typeof ALGO !== 'undefined' && ALGO === 'irsyadulmurid');
+  const actualElev = isIrsyad ? 0 : (elev || 0);
+  const ec   = 0.8333 + 0.0347 * Math.sqrt(actualElev); 
 
   function ha(altDeg) {
     const c = (sin(altDeg) - sin(lat)*sin(sun.Dec)) / (cos(lat)*cos(sun.Dec));
@@ -29,22 +32,31 @@ function prayerTimes(year, month, day, lat, lng, tz, elev) {
   // Ashar Syafi'i: panjang bayangan = 1× tinggi benda
   const ashrAlt = Math.atan(1 / (Math.tan(Math.abs(lat - sun.Dec) * D2R) + 1)) * R2D;
 
-  const fajr    = ha(-20);
-  const syuruq  = ha(-ec);
-  const dhuha   = ha(4.5);   // Dhuha: matahari setinggi +4.5° (waktu masuk dhuha)
-  const maghrib = ha(-ec);
-  const isya    = ha(-18);
+  const hSubuh   = -20;
+  const hSyuruq  = isIrsyad ? -1.0 : -ec;
+  const hDhuha   = 4.5;
+  const hMaghrib = isIrsyad ? -1.0 : -ec;
+  const hIsya    = -18;
+
+  const fajr    = ha(hSubuh);
+  const syuruq  = ha(hSyuruq);
+  const dhuha   = ha(hDhuha);
+  const maghrib = ha(hMaghrib);
+  const isya    = ha(hIsya);
   const ashr    = ha(ashrAlt);
 
+  const ih = (typeof IHTIYAT !== 'undefined' ? IHTIYAT : 2) / 60; // Desimal jam dari menit ihtiyat
+  const dhuhrTime = noon + (isIrsyad ? 4/60 : ih);
+
   return {
-    imsak  : fajr    ? fmtHM(noon - fajr    - 1/6) : '—',
-    fajr   : fajr    ? fmtHM(noon - fajr)           : '—',
-    syuruq : syuruq  ? fmtHM(noon - syuruq)         : '—',
+    imsak  : fajr    ? fmtHM(noon - fajr + ih - 1/6) : '—',
+    fajr   : fajr    ? fmtHM(noon - fajr + ih)       : '—',
+    syuruq : syuruq  ? fmtHM(noon - syuruq)          : '—',
     dhuha  : dhuha   ? fmtHM(noon - dhuha)           : '—',
-    dhuhr  : fmtHM(noon + 0.03),
-    ashr   : ashr    ? fmtHM(noon + ashr)            : '—',
-    maghrib: maghrib ? fmtHM(noon + maghrib)          : '—',
-    isya   : isya    ? fmtHM(noon + isya)             : '—',
+    dhuhr  : fmtHM(dhuhrTime),
+    ashr   : ashr    ? fmtHM(noon + ashr + ih)       : '—',
+    maghrib: maghrib ? fmtHM(noon + maghrib + ih)     : '—',
+    isya   : isya    ? fmtHM(noon + isya + ih)        : '—',
     noonRaw: noon, dec: sun.Dec, eqt: sun.EqT
   };
 }
@@ -52,7 +64,7 @@ function prayerTimes(year, month, day, lat, lng, tz, elev) {
 // ── Render panel Sholat ───────────────────────────────
 function renderPrayer() {
   const now = new Date();
-  const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${LAT}-${LNG}-${TZ}`;
+  const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${LAT}-${LNG}-${TZ}-${typeof ALGO !== 'undefined' ? ALGO : 'jeanmeeus'}-${typeof IHTIYAT !== 'undefined' ? IHTIYAT : 2}`;
   if (_pCache.key !== key) {
     _pCache.result = prayerTimes(now.getFullYear(), now.getMonth()+1, now.getDate(), LAT, LNG, TZ, ELEV);
     _pCache.key    = key;

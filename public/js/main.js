@@ -10,6 +10,8 @@ var LAT  = -8.2664;
 var LNG  = 113.4203;
 var ELEV = 11;
 var TZ   = 7;
+var ALGO = 'jeanmeeus';
+var IHTIYAT = 2;
 
 // ── Bintang latar ─────────────────────────────────────
 (function() {
@@ -142,13 +144,43 @@ document.getElementById('btnGPS').addEventListener('click', function() {
   );
 });
 
+function updateAlgo() {
+  const algoEl = document.getElementById('algoSelect');
+  const ihtiyatEl = document.getElementById('inpIhtiyat');
+  if (algoEl) ALGO = algoEl.value;
+  if (ihtiyatEl) IHTIYAT = parseInt(ihtiyatEl.value) || 0;
+  
+  if (typeof _pCache !== 'undefined') {
+    _pCache.key = null;
+    _pCache.result = null;
+  }
+  renderAll();
+}
+
+function initAlgoListeners() {
+  const algoEl = document.getElementById('algoSelect');
+  const ihtiyatEl = document.getElementById('inpIhtiyat');
+  if (algoEl) {
+    algoEl.value = ALGO;
+    algoEl.addEventListener('change', updateAlgo);
+  }
+  if (ihtiyatEl) {
+    ihtiyatEl.value = IHTIYAT;
+    ihtiyatEl.addEventListener('input', updateAlgo);
+    ihtiyatEl.addEventListener('change', updateAlgo);
+  }
+}
+
 // ── Inisialisasi ──────────────────────────────────────
 setLocStatus(`📍 Pondok Pesantren Nuris Salafiyyah | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
+initAlgoListeners();
 renderAll();
 doCalcHilal();
 tickCountdown();
 if (typeof tickIstiwa === 'function') tickIstiwa();
+if (typeof tickAstroClock === 'function') tickAstroClock();
 setInterval(() => {
   tickCountdown();
   if (typeof tickIstiwa === 'function') tickIstiwa();
+  if (typeof tickAstroClock === 'function') tickAstroClock();
 }, 1000);
