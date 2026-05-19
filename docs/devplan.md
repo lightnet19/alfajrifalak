@@ -240,7 +240,7 @@ function doGenerateHilalChart() {...}
 
 ---
 
-## 5. Versi v2.8.0 — Jam Astronomi & Sinkronisasi Kalender
+## 5. Versi v2.8.0 — Jam Astronomi (SELESAI)
 
 ### 5.1 Formula Jam Astronomi
 

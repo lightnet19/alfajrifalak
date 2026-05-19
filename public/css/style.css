@@ -508,3 +508,66 @@ option { background: var(--bg) !important; color: var(--text) !important; font-f
 
 .hc-sync-tbl td { text-align: center; }
 .hc-sync-tbl td:first-child { text-align: left; }
+
+/* ================================================================
+   Modul Jam Astronomi (v2.8.0) — prefix: ac-
+   ================================================================ */
+
+.ac-hero-card {
+  text-align: center;
+  background: linear-gradient(135deg, rgba(30,30,40,0.8) 0%, rgba(10,10,20,0.9) 100%);
+  border: 1px solid var(--border-s);
+}
+.ac-hero-hd {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 20px;
+}
+.ac-clocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+.ac-clock-box {
+  background: rgba(0,0,0,0.4);
+  padding: 16px 24px;
+  border-radius: 12px;
+  min-width: 150px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.ac-lbl {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.ac-val {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+.ac-val.gold { color: var(--gold); }
+
+.ac-pos-card { padding: 20px; }
+.ac-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ac-item {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dashed rgba(255,255,255,0.1);
+  padding-bottom: 8px;
+}
+.ac-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.ac-k { color: #ccc; font-size: 0.95rem; }
+.ac-v { font-family: monospace; font-size: 1.05rem; font-weight: bold; color: var(--text); }

@@ -194,6 +194,7 @@ function renderAll() {
   renderKonversi();
   renderImsakiyah();
   renderEphemeris();
-  if (typeof renderIstiwa   === 'function') renderIstiwa();
-  if (typeof renderEclipse  === 'function') renderEclipse();
+  if (typeof renderIstiwa     === 'function') renderIstiwa();
+  if (typeof renderEclipse    === 'function') renderEclipse();
+  if (typeof renderAstroClock === 'function') renderAstroClock();
 }

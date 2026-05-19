@@ -88,4 +88,20 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
 - **Catatan Teknis:**
   - Pengecekan 12 iterasi dieksekusi setelah `setTimeout(..., 50)` untuk menghindari *UI freezing* sehingga elemen loading `Memuat...` sempat tergambar.
 
+---
 
+## [2026-05-19] - v2.8.0 Jam Astronomi (Sidereal Time)
+- **Status:** Selesai ✅
+- **Versi:** v2.8.0
+- **File Baru:**
+  - `public/js/astroclock.js` — Kalkulasi GST, LST, posisi real-time Matahari & Bulan, dan fungsi tick per detik.
+- **File Dimodifikasi:**
+  - `public/index.html` — Tambah tab "Jam Astro", panel `#panel-astroclock` dengan 3 kartu (Jam GST/LST, Posisi Matahari, Posisi Bulan). Load `astroclock.js` sebelum `main.js`. Bump v2.8.0.
+  - `public/css/style.css` — Tambah 60+ baris CSS dengan prefix `ac-` (jam, grid nilai, gradien hero-card).
+  - `public/js/ui.js` — Tambah hook `renderAstroClock()` pada `renderAll()`.
+- **Algoritma / Pustaka:**
+  - Memanfaatkan fungsi dari `astro.js` (`jd`, `deltaT`, `sunPos`, `moonPos`, `toHoriz`).
+  - Menambahkan fungsi baru `calcGST` untuk Greenwich Mean Sidereal Time sesuai Jean Meeus Astronomical Algorithms.
+  - Mengkalkulasi Iluminasi Bulan via persentase elongasi sederhana.
+- **Catatan Teknis:**
+  - Dihubungkan dengan setInterval di `main.js` via `tickAstroClock()`. Koordinat altitude dan azimuth dievaluasi secara real-time berdasarkan input Lat/Lng UI.

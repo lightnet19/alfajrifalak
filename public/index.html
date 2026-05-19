@@ -46,6 +46,7 @@
   <button class="tab" data-tab="ephemeris">Ephemeris</button>
   <button class="tab" data-tab="istiwa">Istiwa</button>
   <button class="tab" data-tab="gerhana">Gerhana</button>
+  <button class="tab" data-tab="astroclock">Jam Astro</button>
 </div>
 
 <div class="panel active" id="panel-sholat">
@@ -312,11 +313,57 @@
 
 </div>
 
+<!-- ══ PANEL JAM ASTRO ══ -->
+<div class="panel" id="panel-astroclock">
+  <div class="card ac-hero-card">
+    <div class="ac-hero-hd">JAM ASTRONOMI REAL-TIME</div>
+    <div class="ac-clocks">
+      <div class="ac-clock-box">
+        <div class="ac-lbl">Universal Time</div>
+        <div class="ac-val" id="aclkUT">--:--:--</div>
+      </div>
+      <div class="ac-clock-box">
+        <div class="ac-lbl">Greenwich Sidereal</div>
+        <div class="ac-val gold" id="aclkGST">--:--:--</div>
+      </div>
+      <div class="ac-clock-box">
+        <div class="ac-lbl">Local Sidereal</div>
+        <div class="ac-val gold" id="aclkLST">--:--:--</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card ac-pos-card">
+      <div class="card-hd">☀️ Posisi Matahari Kini</div>
+      <div class="ac-grid">
+        <div class="ac-item"><div class="ac-k">Right Ascension</div><div class="ac-v" id="acSunRA">--</div></div>
+        <div class="ac-item"><div class="ac-k">Declination</div><div class="ac-v" id="acSunDec">--</div></div>
+        <div class="ac-item"><div class="ac-k">Hour Angle</div><div class="ac-v" id="acSunHA">--</div></div>
+        <div class="ac-item"><div class="ac-k">Azimuth</div><div class="ac-v" id="acSunAz">--</div></div>
+        <div class="ac-item"><div class="ac-k">Altitude</div><div class="ac-v" id="acSunAlt">--</div></div>
+      </div>
+    </div>
+    
+    <div class="card ac-pos-card">
+      <div class="card-hd">🌕 Posisi Bulan Kini</div>
+      <div class="ac-grid">
+        <div class="ac-item"><div class="ac-k">Right Ascension</div><div class="ac-v" id="acMoonRA">--</div></div>
+        <div class="ac-item"><div class="ac-k">Declination</div><div class="ac-v" id="acMoonDec">--</div></div>
+        <div class="ac-item"><div class="ac-k">Hour Angle</div><div class="ac-v" id="acMoonHA">--</div></div>
+        <div class="ac-item"><div class="ac-k">Azimuth</div><div class="ac-v" id="acMoonAz">--</div></div>
+        <div class="ac-item"><div class="ac-k">Altitude</div><div class="ac-v" id="acMoonAlt">--</div></div>
+        <div class="ac-item"><div class="ac-k">Iluminasi</div><div class="ac-v" id="acMoonIll">--</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <footer class="site-footer">
   <div class="ft-n">AL-FAJRI</div>
   <div class="ft-o">Lembaga Falakiyah PCNU Kencong</div>
   <div class="ft-a">&#1604;&#1580;&#1606;&#1577; &#1575;&#1604;&#1601;&#1604;&#1603;&#1610;&#1577; &mdash; PCNU &#1603;&#1606;&#1580;&#1608;&#1606;&#1580;</div>
-  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v2.7.0</div>
+  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v2.8.0</div>
 </footer>
 </div>
 
@@ -330,6 +377,7 @@
 <script src="js/eclipse.js"></script>
 <script src="js/istiwa.js"></script>
 <script src="js/hilalchart.js"></script>
+<script src="js/astroclock.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
