@@ -1,6 +1,7 @@
 # 🌙 Al-Fajri Falak — Sistem Hisab Astronomi Islam Modern & Klasik
 
-> ✨ Aplikasi web *client-side* premium untuk perhitungan hisab astronomi Islam komprehensif, dikembangkan khusus atas arahan dan kebutuhan **Lembaga Falakiyah PCNU Kencong**.
+> ✨ Aplikasi web *client-side* premium untuk perhitungan hisab astronomi Islam komprehensif, dikembangkan khusus atas arahan dan kebutuhan **Lembaga Falakiyah PCNU Kencong**.  
+> **Versi:** `v3.0.1` | **Rilis:** `2026-05-19`
 
 Al-Fajri Falak menggabungkan ketelitian sains modern berbasis algoritma astronomi tingkat tinggi **Jean Meeus (*Astronomical Algorithms*)** dengan metodologi perhitungan salaf klasik **Irsyadul Murid**. Sistem ini sepenuhnya berjalan di sisi klien (*client-side*) tanpa *backend overhead*, menawarkan visualisasi interaktif yang responsif, serta terintegrasi penuh dengan penentuan lokasi berbasis GPS.
 
