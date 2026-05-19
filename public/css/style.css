@@ -365,3 +365,124 @@ option { background: var(--bg) !important; color: var(--text) !important; font-f
 
 /* Tabel Istiwa */
 .iw-col { color: var(--gold2) !important; font-weight: 600; }
+
+/* ================================================================
+   Modul Gerhana (v2.6.0)  — prefix: ec-
+   ================================================================ */
+
+.ec-ar-hd {
+  font-family: var(--arabic); font-size: .85rem;
+  color: var(--text3); font-weight: 400; margin-left: 8px;
+}
+
+/* Loading placeholder */
+.ec-loading {
+  text-align: center; padding: 28px; color: var(--text3);
+  font-size: .85rem; letter-spacing: .08em;
+}
+
+/* Empty state */
+.ec-empty {
+  text-align: center; padding: 24px; color: var(--text3);
+  font-size: .85rem;
+}
+
+/* Card head row */
+.ec-card-head {
+  display: flex; align-items: flex-start; gap: 16px;
+  flex-wrap: wrap; margin-bottom: 14px;
+}
+
+.ec-icon {
+  font-size: 2.2rem; line-height: 1;
+  flex-shrink: 0; margin-top: 2px;
+}
+
+.ec-type-label {
+  font-size: 1.05rem; font-weight: 700;
+  letter-spacing: .04em; margin-bottom: 2px;
+}
+
+.ec-ar {
+  font-family: var(--arabic); font-size: 1rem;
+  color: var(--text3); margin-bottom: 4px;
+}
+
+.ec-date {
+  font-size: .8rem; color: var(--gold2);
+  font-family: var(--mono); letter-spacing: .05em;
+}
+
+/* Magnitude box */
+.ec-mag-box {
+  margin-left: auto; text-align: center;
+  background: rgba(200,164,74,.08); border: 1px solid var(--border-s);
+  border-radius: 12px; padding: 10px 18px; flex-shrink: 0;
+}
+
+.ec-mag-val {
+  font-family: var(--mono); font-size: 1.5rem;
+  font-weight: 700; color: var(--gold2);
+  text-shadow: 0 0 12px rgba(252,225,141,.35);
+}
+
+.ec-mag-lbl {
+  font-size: .62rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--text3);
+  margin-top: 3px;
+}
+
+/* Parameter pills */
+.ec-params-row {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+}
+
+.ec-param-pill {
+  background: rgba(255,255,255,.04); border: 1px solid var(--border-s);
+  border-radius: 20px; padding: 4px 14px;
+  font-family: var(--mono); font-size: .78rem; color: var(--text2);
+  letter-spacing: .04em;
+}
+
+/* Contact table inside card */
+.ec-contact-tbl { margin-top: 4px; }
+
+.ec-contact-tbl .ec-time {
+  font-family: var(--mono); font-weight: 700;
+  color: var(--gold2); white-space: nowrap;
+}
+
+.ec-contact-tbl .ec-time-ut {
+  font-family: var(--mono); font-size: .8rem;
+  color: var(--text3); white-space: nowrap;
+}
+
+.ec-max-row td { background: rgba(200,164,74,.10) !important; }
+.ec-max-row .ec-time { color: var(--green) !important; }
+
+/* List table - reuse .dtbl, custom zebra */
+#ec-list-body tr:nth-child(odd) td  { background: rgba(255,255,255,.025); }
+#ec-list-body tr:nth-child(even) td { background: rgba(0,0,0,.15); }
+
+/* Note card */
+.ec-note-card {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: rgba(200,164,74,.05) !important;
+  border-color: rgba(200,164,74,.2) !important;
+}
+
+.ec-note-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+
+.ec-note-text {
+  font-size: .82rem; color: var(--text2); line-height: 1.65;
+}
+
+.ec-note-text strong { color: var(--gold); }
+
+/* Responsive */
+@media(max-width: 560px) {
+  .ec-card-head  { gap: 10px; }
+  .ec-mag-box    { margin-left: 0; }
+  .ec-icon       { font-size: 1.7rem; }
+  .ec-type-label { font-size: .9rem; }
+}

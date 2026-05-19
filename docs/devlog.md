@@ -51,3 +51,23 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - v2.8.0: Jam Astronomi Realtime (GST/LST)
   - v2.9.0: Ephemeris Detail Toposentris
   - v3.0.0: Multi-Algoritma Waktu Sholat (Irsyadul Murid)
+
+---
+
+## [2026-05-19] - v2.6.0 Modul Gerhana Matahari & Bulan
+- **Status:** Selesai ✅
+- **Versi:** v2.6.0
+- **File Baru:**
+  - `public/js/eclipse.js` — Engine kalkulasi gerhana Matahari (Ch.54) dan Bulan (Ch.54 Meeus), fungsi pencarian gerhana terdekat, daftar 2 tahun, dan renderer UI.
+- **File Dimodifikasi:**
+  - `public/index.html` — Tambah tab "Gerhana", panel `#panel-gerhana` dengan 3 kartu (Solar, Lunar, Daftar 2 Tahun), load `eclipse.js`, update versi ke v2.6.0.
+  - `public/css/style.css` — Tambah 100+ baris CSS dengan prefix `ec-` (card head, magnitude box, contact table, parameter pills, note card, responsive).
+  - `public/js/ui.js` — Wire `renderEclipse()` ke `renderAll()`.
+- **Algoritma:**
+  - Gerhana Matahari: Jean Meeus Chapter 54, penentuan jenis (Total/Cincin/Hibrid/Sebagian), waktu kontak C1–C4.
+  - Gerhana Bulan: Jean Meeus Chapter 54, jenis (Total/Sebagian/Penumbral), semi-duration P1,U1,U2,U3,U4,P4.
+  - Cache internal `_ecCache` untuk menghindari kalkulasi ulang setiap render.
+- **Catatan Teknis:**
+  - Waktu yang ditampilkan adalah Greatest Eclipse (puncak global, bukan toposentrik lokal).
+  - Akurasi ≤ 5 menit vs NASA Eclipse Catalog (Jean Meeus level).
+

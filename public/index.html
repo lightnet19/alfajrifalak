@@ -45,6 +45,7 @@
   <button class="tab" data-tab="imsakiyah">Imsakiyah</button>
   <button class="tab" data-tab="ephemeris">Ephemeris</button>
   <button class="tab" data-tab="istiwa">Istiwa</button>
+  <button class="tab" data-tab="gerhana">Gerhana</button>
 </div>
 
 <div class="panel active" id="panel-sholat">
@@ -229,11 +230,57 @@
 
 </div>
 
+<!-- ══ PANEL GERHANA ══ -->
+<div class="panel" id="panel-gerhana">
+
+  <!-- Gerhana Matahari Terdekat -->
+  <div class="card">
+    <div class="card-hd">☀️ Gerhana Matahari Terdekat <span class="ec-ar-hd">كُسُوف الشَّمْس</span></div>
+    <div id="ec-solar-card" class="ec-card-body"><div class="ec-loading">Memuat data gerhana…</div></div>
+  </div>
+
+  <!-- Gerhana Bulan Terdekat -->
+  <div class="card">
+    <div class="card-hd">🌕 Gerhana Bulan Terdekat <span class="ec-ar-hd">خُسُوف الْقَمَر</span></div>
+    <div id="ec-lunar-card" class="ec-card-body"><div class="ec-loading">Memuat data gerhana…</div></div>
+  </div>
+
+  <!-- Tabel 2 Tahun -->
+  <div class="card">
+    <div class="card-hd">📅 Daftar Gerhana — 2 Tahun Mendatang</div>
+    <div style="overflow-x:auto">
+      <table class="dtbl">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Jenis Benda</th>
+            <th>Tipe Gerhana</th>
+            <th>Magnitude</th>
+          </tr>
+        </thead>
+        <tbody id="ec-list-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Catatan -->
+  <div class="card ec-note-card">
+    <div class="ec-note-icon">📖</div>
+    <div class="ec-note-text">
+      <strong>Catatan:</strong> Waktu gerhana adalah waktu <em>global</em> (Greatest Eclipse).
+      Visibilitas di lokasi Anda tergantung pada posisi geometri Bumi–Bulan–Matahari
+      pada saat gerhana. Kalkulasi menggunakan Jean Meeus Ch.54,
+      akurasi ≤ 5 menit vs NASA Eclipse Catalog.
+    </div>
+  </div>
+
+</div>
+
 <footer class="site-footer">
   <div class="ft-n">AL-FAJRI</div>
   <div class="ft-o">Lembaga Falakiyah PCNU Kencong</div>
   <div class="ft-a">&#1604;&#1580;&#1606;&#1577; &#1575;&#1604;&#1601;&#1604;&#1603;&#1610;&#1577; &mdash; PCNU &#1603;&#1606;&#1580;&#1608;&#1606;&#1580;</div>
-  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v2.5.0</div>
+  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v2.6.0</div>
 </footer>
 </div>
 
@@ -243,6 +290,7 @@
 <script src="js/hilal.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/copypdf.js"></script>
+<script src="js/eclipse.js"></script>
 <script src="js/istiwa.js"></script>
 <script src="js/main.js"></script>
 </body>
