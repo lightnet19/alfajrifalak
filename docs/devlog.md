@@ -71,3 +71,21 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - Waktu yang ditampilkan adalah Greatest Eclipse (puncak global, bukan toposentrik lokal).
   - Akurasi ≤ 5 menit vs NASA Eclipse Catalog (Jean Meeus level).
 
+---
+
+## [2026-05-19] - v2.7.0 Grafik Visibilitas Hilal
+- **Status:** Selesai ✅
+- **Versi:** v2.7.0
+- **File Baru:**
+  - `public/js/hilalchart.js` — Modul untuk loop kalkulasi 12 bulan dan rendering Chart.js.
+- **File Dimodifikasi:**
+  - `public/index.html` — Load CDN Chart.js v4, load `hilalchart.js`, dan tambah panel UI Grafik di dalam `#panel-hilal`. Versi bump ke v2.7.0.
+  - `public/css/style.css` — CSS layout untuk chart dan tabel sinkronisasi (`.hc-` prefix).
+- **Algoritma / Pustaka:**
+  - Menggunakan fungsi eksisting `calcHilal` dari `hilal.js`.
+  - Chart.js (via CDN) untuk Bar Chart (Tinggi Hilal) & Line Chart (Elongasi).
+  - Integrasi referensi kriteria (IRNU: Tinggi 3°, Elongasi 6.4°).
+- **Catatan Teknis:**
+  - Pengecekan 12 iterasi dieksekusi setelah `setTimeout(..., 50)` untuk menghindari *UI freezing* sehingga elemen loading `Memuat...` sempat tergambar.
+
+

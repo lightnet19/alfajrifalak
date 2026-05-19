@@ -94,6 +94,42 @@
     <div style="font-family:'Cormorant Garamond',serif;font-size:.95rem;color:var(--gold);margin-bottom:9px">Analisis Kriteria Visibilitas</div>
     <div class="cgrid" id="hilalCritCards"></div>
   </div>
+
+  <!-- Grafik Visibilitas Hilal 12 Bulan -->
+  <div class="card" style="margin-top:16px;">
+    <div class="card-hd">📊 Grafik Visibilitas Hilal 1 Tahun</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
+      <label style="color:var(--text3);font-size:0.85rem">Tahun H:</label>
+      <input type="number" id="hcYear" value="1447" class="lf" style="width:80px">
+      <button class="btn-g" onclick="doGenerateHilalChart()" style="padding:6px 12px;font-size:0.8rem">Generate Grafik</button>
+    </div>
+    
+    <div id="hcLoading" class="ec-loading" style="display:none">Menghitung visibilitas 12 bulan...</div>
+    
+    <div id="hcContainer" style="display:none">
+      <div class="hc-chart-wrap">
+        <canvas id="hilalChartCanvas"></canvas>
+      </div>
+      
+      <div style="margin-top:20px">
+        <div style="font-size:0.85rem;color:var(--gold);margin-bottom:8px;font-family:'Cormorant Garamond',serif">Tabel Sinkronisasi Awal Bulan (IRNU vs Odeh)</div>
+        <div style="overflow-x:auto">
+          <table class="dtbl hc-sync-tbl">
+            <thead>
+              <tr>
+                <th>Bulan Hijriyah</th>
+                <th>Prediksi 1 H (IRNU)</th>
+                <th>T. Hakiki</th>
+                <th>Elongasi</th>
+                <th>Status Kriteria</th>
+              </tr>
+            </thead>
+            <tbody id="hcSyncBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="panel" id="panel-hijri">
@@ -280,10 +316,11 @@
   <div class="ft-n">AL-FAJRI</div>
   <div class="ft-o">Lembaga Falakiyah PCNU Kencong</div>
   <div class="ft-a">&#1604;&#1580;&#1606;&#1577; &#1575;&#1604;&#1601;&#1604;&#1603;&#1610;&#1577; &mdash; PCNU &#1603;&#1606;&#1580;&#1608;&#1606;&#1580;</div>
-  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v2.6.0</div>
+  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v2.7.0</div>
 </footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="js/math.js"></script>
 <script src="js/astro.js"></script>
 <script src="js/prayer.js"></script>
@@ -292,6 +329,7 @@
 <script src="js/copypdf.js"></script>
 <script src="js/eclipse.js"></script>
 <script src="js/istiwa.js"></script>
+<script src="js/hilalchart.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

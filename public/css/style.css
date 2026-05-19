@@ -486,3 +486,25 @@ option { background: var(--bg) !important; color: var(--text) !important; font-f
   .ec-icon       { font-size: 1.7rem; }
   .ec-type-label { font-size: .9rem; }
 }
+
+/* ================================================================
+   Modul Hilal Chart (v2.7.0)  — prefix: hc-
+   ================================================================ */
+
+.hc-chart-wrap {
+  position: relative;
+  height: 350px;
+  width: 100%;
+  margin-bottom: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-s);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+@media(max-width: 560px) {
+  .hc-chart-wrap { height: 280px; padding: 10px; }
+}
+
+.hc-sync-tbl td { text-align: center; }
+.hc-sync-tbl td:first-child { text-align: left; }
