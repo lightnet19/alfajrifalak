@@ -166,22 +166,93 @@ function renderImsakiyah() {
 // ── EPHEMERIS ────────────────────────────────────────
 function renderEphemeris() {
   const now = new Date();
-  const j0  = jd(now.getFullYear(), now.getMonth()+1, now.getDate(), now.getHours()-TZ, now.getMinutes());
+  const utH = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+  const j0 = jd(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate(), utH);
+
   const s = sunPos(j0), m = moonPos(j0), T = (j0 - 2451545) / 36525;
+
+  const lat = typeof LAT !== 'undefined' ? LAT : parseFloat(document.getElementById('inpLat').value) || 0;
+  const lng = typeof LNG !== 'undefined' ? LNG : parseFloat(document.getElementById('inpLng').value) || 0;
+  const elev = typeof ELEV !== 'undefined' ? ELEV : parseFloat(document.getElementById('inpElev').value) || 0;
+
+  const latR = lat * D2R, u = Math.atan(0.99664719 * Math.tan(latR));
+  const rhoS = 0.99664719 * Math.sin(u) + (elev / 6378140) * Math.sin(latR);
+  const rhoC = Math.cos(u) + (elev / 6378140) * Math.cos(latR);
+
+  // Topocentric RA/Dec
+  const sTopo = topoCorrect(s, lat, lng, elev, j0);
+  const mTopo = topoCorrect(m, lat, lng, elev, j0);
+
+  // LST & Hour Angle
+  const GMST = fix(280.46061837 + 360.98564736629 * (j0 - 2451545) + 0.000387933 * T * T - T * T * T / 38710000);
+  const LST = fix(GMST + lng);
+  const sH = LST - s.RA, mH = LST - m.RA;
+
+  // Distances
+  const sDec_rad = s.Dec * D2R, sH_rad = sH * D2R;
+  const sTopoDist = s.dist - (6378.14 / 1.495978707e8) * (rhoC * Math.cos(sDec_rad) * Math.cos(sH_rad) + rhoS * Math.sin(sDec_rad));
+
+  const dec_rad = m.Dec * D2R, mH_rad = mH * D2R;
+  const mTopoDist = m.dist - 6378.14 * (rhoC * Math.cos(dec_rad) * Math.cos(mH_rad) + rhoS * Math.sin(dec_rad));
+
+  // Horizon coords
+  const sGeoHor = toHoriz(s.RA, s.Dec, lat, lng, j0);
+  const mGeoHor = toHoriz(m.RA, m.Dec, lat, lng, j0);
+
+  const sTopoHor = toHoriz(sTopo.RA, sTopo.Dec, lat, lng, j0);
+  const mTopoHor = toHoriz(mTopo.RA, mTopo.Dec, lat, lng, j0);
+
+  // Atmospheric refraction
+  const sRef = refraction(sTopoHor.alt);
+  const mRef = refraction(mTopoHor.alt);
+
+  const sTopoAltRef = sTopoHor.alt + sRef;
+  const mTopoAltRef = mTopoHor.alt + mRef;
+
   const rows = [
-    ['Bujur Ekliptika (λ)',    fix(s.sunLon).toFixed(6)+'°',  m.lon.toFixed(6)+'°'],
-    ['Lintang Ekliptika (β)', '—',                             m.lat.toFixed(6)+'°'],
-    ['Asensio Rekta (AR)',     s.RA.toFixed(6)+'°',            m.RA.toFixed(6)+'°'],
-    ['Deklinasi (δ)',          s.Dec.toFixed(6)+'°',           m.Dec.toFixed(6)+'°'],
-    ['Persamaan Waktu (EqT)', s.EqT.toFixed(6)+' mnt',        '—'],
-    ['Jarak Bumi',            s.dist.toFixed(8)+' AU',         m.dist.toFixed(3)+' km'],
-    ['Semidiameter',          s.SD.toFixed(6)+'°',             m.SD.toFixed(6)+'°'],
-    ['Horizontal Parallax',   s.HP.toFixed(6)+'°',             m.HP.toFixed(6)+'°'],
-    ['Miring Ekliptika (ε)',  obliquity(T).toFixed(6)+'°',    '—'],
-    ['Julian Day (UT)',        j0.toFixed(6),                  ''],
+    ['Bujur Ekliptika (λ)',   fix(s.sunLon).toFixed(6)+'°', '—',                           m.lon.toFixed(6)+'°',         '—'],
+    ['Lintang Ekliptika (β)',  '—',                          '—',                           m.lat.toFixed(6)+'°',         '—'],
+    ['Asensio Rekta (AR)',    dms(s.RA),                    dms(sTopo.RA),                 dms(m.RA),                    dms(mTopo.RA)],
+    ['Deklinasi (δ)',         dms(s.Dec),                   dms(sTopo.Dec),                dms(m.Dec),                   dms(mTopo.Dec)],
+    ['Persamaan Waktu (EqT)', s.EqT.toFixed(6)+' mnt',      '—',                           '—',                          '—'],
+    ['Jarak Bumi',           s.dist.toFixed(8)+' AU',      sTopoDist.toFixed(8)+' AU',    m.dist.toFixed(3)+' km',      mTopoDist.toFixed(3)+' km'],
+    ['Semidiameter',         dmsU(s.SD),                   dmsU(0.2666 / sTopoDist),      dmsU(m.SD),                   dmsU(asin(1737.4 / mTopoDist))],
+    ['Horizontal Parallax',  dmsU(s.HP),                   dmsU(asin(Math.sin(8.794/3600*D2R)/sTopoDist)*R2D), dmsU(m.HP), dmsU(asin(6378.14 / mTopoDist))],
+    ['Altitude (Tinggi)',     (sGeoHor.alt > 0 ? '+' : '') + sGeoHor.alt.toFixed(4) + '°',
+                              (sTopoHor.alt > 0 ? '+' : '') + sTopoHor.alt.toFixed(4) + '°',
+                              (mGeoHor.alt > 0 ? '+' : '') + mGeoHor.alt.toFixed(4) + '°',
+                              (mTopoHor.alt > 0 ? '+' : '') + mTopoHor.alt.toFixed(4) + '°'],
+    ['Azimuth',               sGeoHor.az.toFixed(4) + '°',  sTopoHor.az.toFixed(4) + '°',  mGeoHor.az.toFixed(4) + '°',  mTopoHor.az.toFixed(4) + '°'],
+    ['Refraksi Atmosfer',     '—',                          sRef.toFixed(6) + '°',         '—',                          mRef.toFixed(6) + '°'],
+    ['Tinggi Terbias',        '—',                          (sTopoAltRef > 0 ? '+' : '') + sTopoAltRef.toFixed(4) + '°',
+                              '—',                          (mTopoAltRef > 0 ? '+' : '') + mTopoAltRef.toFixed(4) + '°'],
+    ['Julian Day (UT)',       j0.toFixed(6),                '—',                           '—',                          '—']
   ];
-  let html = `<thead><tr><th class="kc">Parameter</th><th>☀ Matahari</th><th>🌙 Bulan</th></tr></thead><tbody>`;
-  rows.forEach(r => html += `<tr><td class="kc">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`);
+
+  let html = `<thead>
+    <tr>
+      <th class="kc" rowspan="2">Parameter</th>
+      <th colspan="2">☀ Matahari</th>
+      <th colspan="2">🌙 Bulan</th>
+    </tr>
+    <tr>
+      <th>Geosentris</th>
+      <th>Toposentris</th>
+      <th>Geosentris</th>
+      <th>Toposentris</th>
+    </tr>
+  </thead><tbody>`;
+  
+  rows.forEach(r => {
+    html += `<tr>
+      <td class="kc">${r[0]}</td>
+      <td>${r[1]}</td>
+      <td>${r[2]}</td>
+      <td>${r[3]}</td>
+      <td>${r[4]}</td>
+    </tr>`;
+  });
+  
   document.getElementById('ephTable').innerHTML = html + '</tbody>';
 }
 

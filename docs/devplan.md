@@ -316,7 +316,7 @@ function renderAstroClock() {...}   // Render panel statis (posisi matahari/bula
 
 ---
 
-## 6. Versi v2.9.0 — Ephemeris Detail
+## 6. Versi v2.9.0 — Ephemeris Detail (SELESAI)
 
 ### 6.1 Data yang Ditambahkan ke Panel Ephemeris
 

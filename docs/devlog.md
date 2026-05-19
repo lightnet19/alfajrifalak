@@ -105,3 +105,17 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - Mengkalkulasi Iluminasi Bulan via persentase elongasi sederhana.
 - **Catatan Teknis:**
   - Dihubungkan dengan setInterval di `main.js` via `tickAstroClock()`. Koordinat altitude dan azimuth dievaluasi secara real-time berdasarkan input Lat/Lng UI.
+
+---
+
+## [2026-05-19] - v2.9.0 Ephemeris Detail Toposentris
+- **Status:** Selesai ✅
+- **Versi:** v2.9.0
+- **File Dimodifikasi:**
+  - `public/js/ui.js` — Perluas `renderEphemeris()` untuk menghitung perbandingan posisi geosentris vs toposentris, jarak, semidiameter, horizontal parallax, altitude, azimuth, refraksi atmosfer, dan tinggi terbias. Ubah tabel ephemeris menjadi 5-kolom super-detil.
+- **Algoritma / Pustaka:**
+  - Memanfaatkan `topoCorrect()` dari `astro.js` secara optimal untuk Matahari & Bulan.
+  - Implementasi estimasi jarak toposentris Bulan (dengan koreksi observer $\rho$).
+  - Implementasi refraksi atmosfer Bennett (1982) via `refraction()` dari `astro.js`.
+- **Catatan Teknis:**
+  - Mengubah header tabel menjadi sub-header `colspan` ganda agar data parameter Geosentris & Toposentris Matahari dan Bulan bersanding sempurna dan sangat mudah dibaca.
