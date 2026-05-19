@@ -7,13 +7,16 @@
 
 /**
  * Ambil offset Istiwa dari noonRaw prayer cache.
- * noonRaw adalah waktu kulminasi Matahari dalam jam lokal.
- * Offset = noonRaw - 12 (jam) → positif = Istiwa lebih lambat.
- * @returns {number} offset dalam jam desimal
+ * noonRaw = waktu kulminasi Matahari dalam jam WIB/WITA/WIT.
+ * Saat kulminasi = 11:26 WIB → Matahari sudah 12:00 Istiwa pada 11:26 WIB
+ * → Jam Istiwa MAJU dari WIB sebesar (12 - 11:26) = +34 menit.
+ * Rumus benar: offset = 12 - noonRaw
+ *   (positif = Istiwa MAJU/lebih cepat dari waktu sipil)
+ * @returns {number} offset dalam jam desimal (positif = Istiwa maju)
  */
 function getIstiwaOffset() {
   if (typeof _pCache === 'undefined' || !_pCache.result) return 0;
-  return _pCache.result.noonRaw - 12;
+  return 12 - _pCache.result.noonRaw;
 }
 
 /** Jam desimal → HH:MM:SS string (looping 0-24h) */
@@ -60,6 +63,8 @@ function tickIstiwa() {
   el_iw.textContent  = fmtIstiwaHMS(istiwaH);
   el_loc.textContent = fmtIstiwaHMS(localH);
 
+  // offset > 0 = Istiwa MAJU (lebih cepat) dari waktu sipil — lazim untuk lokasi timur meridian standar
+  // offset < 0 = Istiwa LAMBAT (lebih lambat) dari waktu sipil — jika barat meridian atau EqT sangat negatif
   const sign  = offset >= 0 ? 'MAJU' : 'LAMBAT';
   const color = offset >= 0 ? 'var(--green)' : 'var(--amber)';
   el_dif.textContent  = `Selisih: ${fmtDiff(offset)} (Istiwa ${sign} dari ${tzLabel(TZ)})`;
@@ -73,7 +78,7 @@ function tickIstiwa() {
 function renderIstiwa() {
   if (typeof _pCache === 'undefined' || !_pCache.result) return;
   const p      = _pCache.result;
-  const offset = p.noonRaw - 12; // jam desimal
+  const offset = 12 - p.noonRaw; // jam desimal (+ = Istiwa MAJU dari waktu sipil)
 
   // Komponen individual
   const korBujur = (LNG - TZ * 15) / 15;   // jam
@@ -135,6 +140,7 @@ function _renderIstiwaSholat(p, offset) {
       if(parts.length === 2) {
         const h = Number(parts[0]);
         const m = Number(parts[1]);
+        // Konversi WIB → Istiwa: tambah offset (jika Istiwa maju, jam Istiwa lebih besar dari WIB)
         iw = fmtIstiwaHMS(h + m/60 + offset);
         iw = iw.substring(0, 5); // HH:MM saja
       }
@@ -167,6 +173,7 @@ function _initIstiwaConverter(offset) {
     const m = parts[1] || 0;
     const s = parts[2] || 0;
     const localH = h + m/60 + s/3600;
+    // Wasathi + offset = Istiwa
     outLI.textContent = fmtIstiwaHMS(localH + offset);
   }
   
@@ -178,6 +185,7 @@ function _initIstiwaConverter(offset) {
     const m = parts[1] || 0;
     const s = parts[2] || 0;
     const istiwaH = h + m/60 + s/3600;
+    // Istiwa - offset = Wasathi
     outIL.textContent = fmtIstiwaHMS(istiwaH - offset);
   }
 

@@ -135,3 +135,21 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - *Irsyadul Murid*: Metode salaf taqribi klasik menggunakan rumus ta'dil bujur & lintang dengan tinggi matahari tertentu (Fajr -20°, Asr As-Syadzili, Isha -18°).
 - **Catatan Teknis:**
   - Sistem cache terkomposisi menggunakan key string `lat|lng|year|month|day|elev|algo|ihtiyat` untuk menghindari overhead penghitungan ulang saat user bernavigasi.
+
+---
+
+## [2026-05-19] - v3.0.1 Bugfix: Tanda Offset Jam Istiwa Salah
+- **Status:** Selesai ✅
+- **Bug:** Jam Istiwa ditampilkan sebagai LAMBAT dari WIB untuk lokasi Kencong, padahal seharusnya MAJU ±34 menit.
+- **Root Cause:**
+  - Formula offset di `istiwa.js`: `offset = noonRaw - 12` **salah tanda**.
+  - `noonRaw` untuk Kencong (113.42°E, WIB/UTC+7) = ≈ 11:26 WIB (kulminasi Matahari terjadi sebelum jam 12:00 WIB).
+  - `noonRaw - 12` menghasilkan nilai **negatif** (≈ -0.56 jam), keliru menyatakan Istiwa **lambat**.
+  - **Penjelasan yang benar:** Jika kulminasi = 11:26 WIB, maka pada saat 11:26 WIB, jam istiwa sudah menunjuk 12:00 → Istiwa **MAJU** +34 menit dari WIB.
+- **Formula yang Benar:** `offset = 12 - noonRaw`
+  - Untuk Kencong: `12 - 11.44 = +0.56 jam ≈ +33.7 menit` (positif = MAJU)
+  - Komponen: Koreksi Bujur `(113.42 - 105)/15 × 60 = +33.7 mnt` + EqT `≈ +3 mnt Mei` ≈ **+36 mnt total**
+- **File Diperbaiki:** `public/js/istiwa.js`
+  - `getIstiwaOffset()`: dibalik dari `noonRaw - 12` → `12 - noonRaw`
+  - `renderIstiwa()`: idem
+  - Komentar diperjelas untuk menguraikan logika arah offset
