@@ -15,7 +15,7 @@
 | v2.7.0 | Grafik Visibilitas Hilal | ✅ Selesai |
 | v2.8.0 | Jam Astronomi & Sinkronisasi Kalender | ✅ Selesai |
 | v2.9.0 | Ephemeris Detail (Geosentris & Toposentris) | ✅ Selesai |
-| v3.0.0 | Multi-Algoritma | ✅ Selesai |
+| v3.0.1 | Multi-Algoritma & Bugfix Istiwa | ✅ Selesai |
 | v3.x | PWA, Qodho, Tasbih, dll. | 📋 Direncanakan |
 
 ---
