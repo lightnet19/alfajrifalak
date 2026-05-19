@@ -194,4 +194,5 @@ function renderAll() {
   renderKonversi();
   renderImsakiyah();
   renderEphemeris();
+  if (typeof renderIstiwa === 'function') renderIstiwa();
 }

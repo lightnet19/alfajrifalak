@@ -44,6 +44,7 @@
   <button class="tab" data-tab="konversi">Konversi</button>
   <button class="tab" data-tab="imsakiyah">Imsakiyah</button>
   <button class="tab" data-tab="ephemeris">Ephemeris</button>
+  <button class="tab" data-tab="istiwa">Istiwa</button>
 </div>
 
 <div class="panel active" id="panel-sholat">
@@ -173,11 +174,66 @@
   </div>
 </div>
 
+<div class="panel" id="panel-istiwa">
+
+  <!-- 1. Dual Clock -->
+  <div class="card iw-dual-clock">
+    <div class="iw-clock-wrap">
+      <div class="iw-clock-col">
+        <div class="iw-clock-lbl">⏰ JAM ISTIWA</div>
+        <div class="iw-clock-ar">الوَقْتُ الحَقِيقِي</div>
+        <div class="iw-clock-val gold" id="istiwaClockVal">--:--:--</div>
+        <div class="iw-clock-sub">Waktu Hakiki / Apparent Solar Time</div>
+      </div>
+      <div class="iw-clock-sep"></div>
+      <div class="iw-clock-col">
+        <div class="iw-clock-lbl">🕐 JAM LOKAL</div>
+        <div class="iw-clock-ar">الوَقْتُ الوَسَطِي</div>
+        <div class="iw-clock-val" id="localClockVal">--:--:--</div>
+        <div class="iw-clock-sub" id="localClockTZ">Waktu Pertengahan</div>
+      </div>
+    </div>
+    <div class="iw-diff" id="istiwaClockDiff">Menghitung...</div>
+  </div>
+
+  <!-- 2. Parameter Koreksi -->
+  <div class="card">
+    <div class="card-hd">Komponen Koreksi Waktu</div>
+    <div class="iw-params-grid" id="istiwaParams"></div>
+  </div>
+
+  <!-- 3. Tabel Sholat Istiwa -->
+  <div class="card">
+    <div class="card-hd">Waktu Sholat — Wasathi & Istiwa</div>
+    <div style="overflow-x:auto">
+      <table class="dtbl" id="istiwaSholat"></table>
+    </div>
+  </div>
+
+  <!-- 4. Konverter -->
+  <div class="card">
+    <div class="card-hd">Konverter Waktu</div>
+    <div class="two-col">
+      <div class="conv-box">
+        <label>Wasathi (WIB) → Istiwa</label>
+        <input type="time" id="convLtoI" step="1">
+        <div class="conv-res" id="convLtoIRes">--:--:--</div>
+      </div>
+      <div class="conv-box">
+        <label>Istiwa → Wasathi (WIB)</label>
+        <input type="time" id="convItoL" step="1">
+        <div class="conv-res" id="convItoLRes">--:--:--</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <footer class="site-footer">
   <div class="ft-n">AL-FAJRI</div>
   <div class="ft-o">Lembaga Falakiyah PCNU Kencong</div>
   <div class="ft-a">&#1604;&#1580;&#1606;&#1577; &#1575;&#1604;&#1601;&#1604;&#1603;&#1610;&#1577; &mdash; PCNU &#1603;&#1606;&#1580;&#1608;&#1606;&#1580;</div>
-  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v2.4</div>
+  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v2.5.0</div>
 </footer>
 </div>
 
@@ -187,6 +243,7 @@
 <script src="js/hilal.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/copypdf.js"></script>
+<script src="js/istiwa.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

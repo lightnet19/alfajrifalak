@@ -147,4 +147,8 @@ setLocStatus(`📍 Pondok Pesantren Nuris Salafiyyah | ${LAT.toFixed(5)}°, ${LN
 renderAll();
 doCalcHilal();
 tickCountdown();
-setInterval(tickCountdown, 1000);
+if (typeof tickIstiwa === 'function') tickIstiwa();
+setInterval(() => {
+  tickCountdown();
+  if (typeof tickIstiwa === 'function') tickIstiwa();
+}, 1000);
