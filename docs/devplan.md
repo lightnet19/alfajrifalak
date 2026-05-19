@@ -1,479 +1,481 @@
-﻿# 🛠️ Development Plan (DevPlan)
-## Modul Jam Istiwa — Al-Fajri v2.5.0
-**Versi:** 1.0.0 | **Tanggal:** 2026-05-19 | **Referensi PRD:** docs/prd.md
+# 🛠️ Development Plan (DevPlan) — Komprehensif
+## Al-Fajri Falak — Roadmap Teknis Jangka Panjang
+**Referensi PRD:** docs/prd.md | **Inspiras:** Kanzul Falak v3.10.0
+**Versi Dokumen:** 2.0.0 | **Diperbarui:** 2026-05-19
 
 ---
 
-## 1. Ringkasan Teknis
+## 1. Status Implementasi Saat Ini
 
-| Item | Detail |
-|---|---|
-| Versi Target | v2.5.0 |
-| File Baru | `public/js/istiwa.js` |
-| File Dimodifikasi | `public/index.html`, `public/css/style.css`, `public/js/prayer.js`, `public/js/main.js` |
-| Dependency Baru | Tidak ada (zero new libraries) |
-| Estimasi LOC | ~200 baris JS + ~80 baris CSS + ~60 baris HTML |
-
----
-
-## 2. Analisis Formula Matematis
-
-### 2.1 Formula Utama
-
-```
-Koreksi_Bujur (jam) = (LNG - TZ * 15) / 15
-Selisih_Total (jam)  = Koreksi_Bujur + EqT / 60
-Jam_Istiwa           = Jam_Lokal + Selisih_Total
-```
-
-**Contoh (Kencong, Jember):**
-- LNG = 113.4203°, TZ = 7 (WIB), Bujur Standar = 105°
-- Koreksi Bujur = (113.4203 - 105) / 15 = +0.5614 jam = +33 mnt 41 dtk
-- Jika EqT = +3.2 menit → Selisih_Total = 33.68 + 3.2/60 = +33 mnt 53 dtk
-- Jam Lokal 13:02:14 WIB → Jam Istiwa = 13:35:67 = **13:36:07 Istiwa**
-
-### 2.2 Konversi Waktu Sholat
-
-```
-Waktu_Sholat_Istiwa = Waktu_Sholat_Wasathi + Selisih_Total
-```
-
-> Nilai `noonRaw` dari `prayerTimes()` sudah mengandung koreksi EqT dan bujur
-> (yaitu waktu kulminasi lokal). Nilai ini adalah **12:00 Istiwa** yang dikonversi
-> ke waktu lokal. Jadi: `Selisih = noonRaw - 12`.
-
-### 2.3 Implementasi Ringkas di JS
-
-```js
-// Ambil dari cache prayer (sudah dihitung)
-// noonRaw = kulminasi surya dalam jam lokal
-// noonRaw - 12 = total selisih istiwa vs wasathi
-function getIstiwaOffset(noonRaw) {
-  return noonRaw - 12; // jam (positif = Istiwa lebih lambat dari WIB)
-}
-
-function localToIstiwa(localHour, offset) {
-  return ((localHour + offset) % 24 + 24) % 24;
-}
-
-function istiwaToLocal(istiwaHour, offset) {
-  return ((istiwaHour - offset) % 24 + 24) % 24;
-}
-```
-
-> **Catatan:** Menggunakan `noonRaw - 12` lebih akurat dan konsisten
-> daripada menghitung ulang dari EqT + koreksi bujur secara terpisah,
-> karena `noonRaw` sudah melalui kalkulasi Jean Meeus penuh.
+| Versi | Fitur | Status |
+|---|---|---|
+| v2.4.x | Fondasi (Sholat, Hilal, Kiblat, Ephemeris, Imsakiyah) | ✅ Selesai |
+| v2.5.0 | Jam Istiwa (Waktu Hakiki) | ✅ Selesai |
+| v2.6.0 | Gerhana Matahari & Bulan | 📋 Direncanakan |
+| v2.7.0 | Grafik Visibilitas Hilal | 📋 Direncanakan |
+| v2.8.0 | Jam Astronomi & Sinkronisasi Kalender | 📋 Direncanakan |
+| v2.9.0 | Ephemeris Detail (Geosentris & Toposentris) | 📋 Direncanakan |
+| v3.0.0 | Multi-Algoritma | 📋 Direncanakan |
+| v3.x | PWA, Qodho, Tasbih, dll. | 💡 Ide |
 
 ---
 
-## 3. Arsitektur Solusi
+## 2. Arsitektur File (Saat Ini & Target)
 
 ```
-index.html
-  ├── Tab baru: data-tab="istiwa"
-  └── Panel baru: id="panel-istiwa"
-        ├── #istiwa-clock      ← Jam Istiwa real-time
-        ├── #local-clock       ← Jam Lokal real-time
-        ├── #istiwa-params     ← Koreksi bujur, EqT, total selisih, zawal
-        ├── #istiwa-sholat     ← Tabel waktu sholat Wasathi vs Istiwa
-        └── #istiwa-converter  ← Input konverter dua arah
+public/
+├── index.html          ← SPA entry point (MODIFIKASI per versi)
+├── css/
+│   └── style.css       ← Design system (MODIFIKASI per versi)
+└── js/
+    ├── math.js         ← Layer 1: Util (konversi, format, JD) [STABIL]
+    ├── astro.js        ← Layer 2: Jean Meeus core [MODIFIKASI jika perlu]
+    ├── prayer.js       ← Layer 3: Waktu sholat + cache [STABIL]
+    ├── hilal.js        ← Layer 3: Hisab awal bulan [STABIL]
+    ├── eclipse.js      ← Layer 3: Gerhana [BARU v2.6.0]
+    ├── ui.js           ← Layer 4: Render semua panel [MODIFIKASI per versi]
+    ├── copypdf.js      ← Layer 5: Export [MODIFIKASI per versi]
+    ├── istiwa.js       ← Layer 5: Jam Istiwa [v2.5.0 ✅]
+    ├── hilalchart.js   ← Layer 5: Grafik hilal [BARU v2.7.0]
+    ├── astroclock.js   ← Layer 5: Jam Astronomi [BARU v2.8.0]
+    └── main.js         ← Layer 6: Init (HARUS TERAKHIR) [MODIFIKASI per versi]
 
-js/istiwa.js  (BARU)
-  ├── getIstiwaOffset(noonRaw)   ← Hitung selisih dari noonRaw
-  ├── fmtIstiwa(h)               ← Format jam Istiwa HH:MM:SS
-  ├── renderIstiwa()             ← Render panel statis (params + tabel)
-  └── tickIstiwa()               ← Update clock setiap detik
-
-js/prayer.js  (MODIFIKASI)
-  └── prayerTimes() → tambah return noonRaw (sudah ada), EqT, koreksi bujur
-
-js/main.js  (MODIFIKASI)
-  └── setInterval → panggil tickIstiwa() bersamaan tickCountdown()
-
-css/style.css  (MODIFIKASI)
-  └── Tambah class: .iw-clock, .iw-params-grid, .iw-diff, .iw-sholat-tbl, .iw-conv
+docs/
+├── prd.md              ← Product Requirements [UPDATED ✅]
+├── devplan.md          ← Development Plan [UPDATED ✅]
+└── devlog.md           ← Development Log [UPDATE per versi]
 ```
 
----
-
-## 4. Rencana Implementasi Detail
-
-### FASE 1 — Kalkulasi & File Baru `js/istiwa.js`
-
-**Task 1.1 — Fungsi Core**
-
-```js
-/**
- * istiwa.js — Modul Jam Istiwa (Waktu Hakiki)
- * Al-Fajri v2.5.0 | Lembaga Falakiyah PCNU Kencong
- * Depends on: math.js, astro.js, prayer.js
- */
-'use strict';
-
-/**
- * Ambil offset Istiwa dari noonRaw prayer cache.
- * noonRaw adalah waktu kulminasi Matahari dalam jam lokal.
- * Offset = noonRaw - 12 (jam) → positif = Istiwa lebih lambat.
- * @returns {number} offset dalam jam desimal
- */
-function getIstiwaOffset() {
-  if (!_pCache.result) return 0;
-  return _pCache.result.noonRaw - 12;
-}
-
-/** Jam desimal → HH:MM:SS string (looping 0-24h) */
-function fmtIstiwaHMS(h) {
-  h = ((h % 24) + 24) % 24;
-  const hh = Math.floor(h);
-  const mm = Math.floor((h - hh) * 60);
-  const ss = Math.floor(((h - hh) * 60 - mm) * 60);
-  return `${pZ(hh)}:${pZ(mm)}:${pZ(ss)}`;
-}
-
-/** Format selisih jam desimal → "+X mnt YY dtk" atau "-X mnt YY dtk" */
-function fmtDiff(diffHour) {
-  const sign   = diffHour >= 0 ? '+' : '-';
-  const total  = Math.abs(diffHour) * 3600; // detik
-  const mnt    = Math.floor(total / 60);
-  const dtk    = Math.round(total % 60);
-  return `${sign}${mnt} mnt ${pZ(dtk)} dtk`;
-}
-
-/** Nama zona waktu dari TZ offset */
-function tzLabel(tz) {
-  if (tz === 7) return 'WIB';
-  if (tz === 8) return 'WITA';
-  if (tz === 9) return 'WIT';
-  return `UTC+${tz}`;
-}
-```
-
-**Task 1.2 — Fungsi Tick (real-time)**
-
-```js
-/**
- * tickIstiwa — dipanggil setiap detik dari main.js
- * Update tampilan Jam Istiwa dan Jam Lokal
- */
-function tickIstiwa() {
-  const el_iw  = document.getElementById('istiwaClockVal');
-  const el_loc = document.getElementById('localClockVal');
-  const el_dif = document.getElementById('istiwaClockDiff');
-  if (!el_iw) return;
-
-  const now    = new Date();
-  const localH = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
-  const offset = getIstiwaOffset(); // jam desimal
-  const istiwaH = localH + offset;
-
-  el_iw.textContent  = fmtIstiwaHMS(istiwaH);
-  el_loc.textContent = fmtIstiwaHMS(localH);
-
-  const sign  = offset >= 0 ? 'MAJU' : 'LAMBAT';
-  const color = offset >= 0 ? 'var(--green)' : 'var(--amber)';
-  el_dif.textContent  = `Selisih: ${fmtDiff(offset)} (Istiwa ${sign} dari ${tzLabel(TZ)})`;
-  el_dif.style.color  = color;
-}
-```
-
-**Task 1.3 — Fungsi Render Statis**
-
-```js
-/**
- * renderIstiwa — dipanggil dari renderAll() di ui.js
- * Render: parameter koreksi, tabel sholat istiwa, konverter
- */
-function renderIstiwa() {
-  if (!_pCache.result) return;
-  const p      = _pCache.result;
-  const offset = p.noonRaw - 12; // jam desimal
-
-  // Komponen individual
-  const korBujur = (LNG - TZ * 15) / 15;   // jam
-  const eqtHour  = p.eqt / 60;             // menit → jam
-
-  _renderIstiwaParams(offset, korBujur, eqtHour, p.noonRaw);
-  _renderIstiwaSholat(p, offset);
-  _initIstiwaConverter(offset);
-}
-
-function _renderIstiwaParams(offset, korBujur, eqtHour, noonRaw) {
-  const el = document.getElementById('istiwaParams');
-  if (!el) return;
-  el.innerHTML = `
-    <div class="iw-param-card">
-      <div class="iw-param-lbl">Eq. of Time</div>
-      <div class="iw-param-ar">تَعْدِيلُ الزَّمَان</div>
-      <div class="iw-param-val ${eqtHour >= 0 ? 'pos' : 'neg'}">${fmtDiff(eqtHour)}</div>
-    </div>
-    <div class="iw-param-card">
-      <div class="iw-param-lbl">Koreksi Bujur</div>
-      <div class="iw-param-ar">فَضْلُ الْبَيْض</div>
-      <div class="iw-param-val ${korBujur >= 0 ? 'pos' : 'neg'}">${fmtDiff(korBujur)}</div>
-    </div>
-    <div class="iw-param-card">
-      <div class="iw-param-lbl">Total Selisih</div>
-      <div class="iw-param-ar">Istiwa − Wasathi</div>
-      <div class="iw-param-val ${offset >= 0 ? 'pos' : 'neg'}">${fmtDiff(offset)}</div>
-    </div>
-    <div class="iw-param-card">
-      <div class="iw-param-lbl">Kulminasi (Zawal)</div>
-      <div class="iw-param-ar">الزَّوَال</div>
-      <div class="iw-param-val">${fmtIstiwaHMS(noonRaw)} ${tzLabel(TZ)}</div>
-    </div>
-  `;
-}
-
-function _renderIstiwaSholat(p, offset) {
-  const el = document.getElementById('istiwaSholat');
-  if (!el) return;
-  const rows = [
-    { n:'Imsak',   ar:'إمساك',     w: p.imsak   },
-    { n:'Subuh',   ar:'الصبح',    w: p.fajr    },
-    { n:'Syuruq',  ar:'الشروق',  w: p.syuruq  },
-    { n:'Dhuha',   ar:'الضحى',   w: p.dhuha   },
-    { n:'Dzuhur',  ar:'الظهر',    w: p.dhuhr   },
-    { n:'Ashar',   ar:'العصر',    w: p.ashr    },
-    { n:'Maghrib', ar:'المغرب',  w: p.maghrib },
-    { n:"Isya'",   ar:'العشاء',   w: p.isya    },
-  ];
-  let html = `<thead><tr>
-    <th>Sholat</th><th>Arab</th>
-    <th>${tzLabel(TZ)}</th><th>Istiwa</th>
-  </tr></thead><tbody>`;
-  rows.forEach(r => {
-    let iw = '—';
-    if (r.w !== '—') {
-      const [h, m] = r.w.split(':').map(Number);
-      iw = fmtIstiwaHMS(h + m/60 + offset);
-      iw = iw.substring(0, 5); // HH:MM saja
-    }
-    html += `<tr>
-      <td class="kc">${r.n}</td>
-      <td style="font-family:var(--arabic);font-size:1.1rem">${r.ar}</td>
-      <td>${r.w}</td>
-      <td class="iw-col">${iw}</td>
-    </tr>`;
-  });
-  el.innerHTML = html + '</tbody>';
-}
-
-function _initIstiwaConverter(offset) {
-  // Wasathi -> Istiwa
-  const inpLI = document.getElementById('convLtoI');
-  const outLI = document.getElementById('convLtoIRes');
-  // Istiwa -> Wasathi
-  const inpIL = document.getElementById('convItoL');
-  const outIL = document.getElementById('convItoLRes');
-
-  function doLtoI() {
-    const v = inpLI.value;
-    if (!v) { outLI.textContent = '--:--:--'; return; }
-    const [h, m, s] = v.split(':').map(Number);
-    const localH = h + (m||0)/60 + (s||0)/3600;
-    outLI.textContent = fmtIstiwaHMS(localH + offset);
-  }
-  function doItoL() {
-    const v = inpIL.value;
-    if (!v) { outIL.textContent = '--:--:--'; return; }
-    const [h, m, s] = v.split(':').map(Number);
-    const istiwaH = h + (m||0)/60 + (s||0)/3600;
-    outIL.textContent = fmtIstiwaHMS(istiwaH - offset);
-  }
-
-  inpLI.oninput = doLtoI;
-  inpIL.oninput = doItoL;
-}
-```
-
----
-
-### FASE 2 — HTML: Tab & Panel Baru (`index.html`)
-
-**Task 2.1 — Tambah Tab Button** (setelah tab ephemeris, baris 46):
-
+### Urutan Load Script (Target v3.0.0)
 ```html
-<button class="tab" data-tab="istiwa">Istiwa</button>
-```
-
-**Task 2.2 — Tambah Panel** (setelah `#panel-ephemeris`, sebelum `<footer>`):
-
-```html
-<div class="panel" id="panel-istiwa">
-
-  <!-- 1. Dual Clock -->
-  <div class="card iw-dual-clock">
-    <div class="iw-clock-wrap">
-      <div class="iw-clock-col">
-        <div class="iw-clock-lbl">⏰ JAM ISTIWA</div>
-        <div class="iw-clock-ar">الوَقْتُ الحَقِيقِي</div>
-        <div class="iw-clock-val gold" id="istiwaClockVal">--:--:--</div>
-        <div class="iw-clock-sub">Waktu Hakiki / Apparent Solar Time</div>
-      </div>
-      <div class="iw-clock-sep"></div>
-      <div class="iw-clock-col">
-        <div class="iw-clock-lbl">🕐 JAM LOKAL</div>
-        <div class="iw-clock-ar">الوَقْتُ الوَسَطِي</div>
-        <div class="iw-clock-val" id="localClockVal">--:--:--</div>
-        <div class="iw-clock-sub" id="localClockTZ">Waktu Pertengahan</div>
-      </div>
-    </div>
-    <div class="iw-diff" id="istiwaClockDiff">Menghitung...</div>
-  </div>
-
-  <!-- 2. Parameter Koreksi -->
-  <div class="card">
-    <div class="card-hd">Komponen Koreksi Waktu</div>
-    <div class="iw-params-grid" id="istiwaParams"></div>
-  </div>
-
-  <!-- 3. Tabel Sholat Istiwa -->
-  <div class="card">
-    <div class="card-hd">Waktu Sholat — Wasathi & Istiwa</div>
-    <div style="overflow-x:auto">
-      <table class="dtbl" id="istiwaSholat"></table>
-    </div>
-  </div>
-
-  <!-- 4. Konverter -->
-  <div class="card">
-    <div class="card-hd">Konverter Waktu</div>
-    <div class="two-col">
-      <div class="conv-box">
-        <label>Wasathi (WIB) → Istiwa</label>
-        <input type="time" id="convLtoI" step="1">
-        <div class="conv-res" id="convLtoIRes">--:--:--</div>
-      </div>
-      <div class="conv-box">
-        <label>Istiwa → Wasathi (WIB)</label>
-        <input type="time" id="convItoL" step="1">
-        <div class="conv-res" id="convItoLRes">--:--:--</div>
-      </div>
-    </div>
-  </div>
-
-</div>
-```
-
-**Task 2.3 — Tambah script tag** (setelah `copypdf.js`, sebelum `main.js`):
-
-```html
-<script src="js/istiwa.js"></script>
+<script src="js/math.js"></script>
+<script src="js/astro.js"></script>
+<script src="js/prayer.js"></script>
+<script src="js/hilal.js"></script>
+<script src="js/eclipse.js"></script>     <!-- v2.6.0 -->
+<script src="js/ui.js"></script>
+<script src="js/copypdf.js"></script>
+<script src="js/istiwa.js"></script>      <!-- v2.5.0 ✅ -->
+<script src="js/hilalchart.js"></script>  <!-- v2.7.0 -->
+<script src="js/astroclock.js"></script>  <!-- v2.8.0 -->
+<script src="js/main.js"></script>
 ```
 
 ---
 
-### FASE 3 — CSS: Class Baru (`style.css`)
+## 3. Versi v2.6.0 — Modul Gerhana
+
+### 3.1 Dasar Algoritma
+
+Menggunakan **Jean Meeus, "Astronomical Algorithms"** Chapter 54 (Solar Eclipse) & Chapter 55 (Lunar Eclipse).
+
+**Gerhana Matahari (Metode Meeus):**
+```
+k = bulan lunasi (terdekat new moon)
+JDE_nm = JDE new moon ke-k
+T = (JDE_nm - 2451545) / 36525
+
+F = 160.7108 + 390.67050284*k - 0.0016118*T² - 0.00000227*T³ + 0.000000011*T⁴
+
+Gerhana terjadi jika |sin(F)| < 0.36
+
+Magnitude = ...
+```
+
+**Gerhana Bulan (Metode Meeus):**
+```
+k = bulan lunasi (terdekat full moon)
+JDE_fm = JDE full moon ke-k
+
+Gerhana terjadi jika:
+  u < -0.0010  → Total
+  u < 0.1026   → Parsial
+  u < 1.0128   → Penumbral
+  (di mana u = jarak pusat Bulan dari pusat umbra)
+```
+
+### 3.2 File Baru: `js/eclipse.js`
+
+**Fungsi yang Diimplementasikan:**
+
+```js
+/**
+ * eclipse.js — Modul Gerhana Matahari & Bulan
+ * Al-Fajri v2.6.0 | Jean Meeus Chapter 54 & 55
+ * Depends on: math.js, astro.js
+ */
+
+// Gerhana Matahari — cari gerhana terdekat
+function nextSolarEclipse(year, month, lat, lng, tz) {...}
+
+// Gerhana Bulan — cari gerhana terdekat
+function nextLunarEclipse(year, month) {...}
+
+// Cari semua gerhana dalam rentang tahun tertentu
+function eclipsesInYear(year) {...}
+
+// Render panel gerhana
+function renderEclipse() {...}
+```
+
+### 3.3 UI Panel Gerhana
+
+**Tab baru:** "Gerhana" (setelah Istiwa)
+
+**Layout:**
+```
++--------------------------------------------------+
+|  JENIS: Gerhana Matahari Total                   |
+|  Magnitude: 1.042 | Obscuration: 98.2%           |
++--------------------------------------------------+
+|  WAKTU KONTAK (WIB)         |  DATA TEKNIS       |
+|  C1: 14:12:34               |  Lat: -8.26°       |
+|  C2: 15:18:42               |  Gambar Gerhana    |
+|  Puncak: 15:51:15           |  [diagram SVG]     |
+|  C3: 16:24:21               |                    |
+|  C4: 17:28:19               |                    |
++--------------------------------------------------+
+|  GERHANA MENDATANG (2 tahun ke depan)            |
+|  [Tabel: Tanggal | Jenis | Wilayah | Magnitude]  |
++--------------------------------------------------+
+```
+
+### 3.4 CSS Baru (tambahkan ke style.css)
 
 ```css
-/* ─── Modul Istiwa ─────────────────────────────── */
-
-.iw-dual-clock { padding: 28px; }
-
-.iw-clock-wrap {
-  display: flex; align-items: center; justify-content: center;
-  gap: 0; flex-wrap: wrap;
-}
-
-.iw-clock-col {
-  flex: 1; min-width: 220px; text-align: center; padding: 16px 24px;
-}
-
-.iw-clock-sep {
-  width: 1px; height: 120px; background: var(--border-s);
-  flex-shrink: 0; align-self: center;
-}
-@media(max-width: 560px) {
-  .iw-clock-sep { width: 80%; height: 1px; }
-}
-
-.iw-clock-lbl {
-  font-size: .7rem; font-weight: 700; letter-spacing: .18em;
-  text-transform: uppercase; color: var(--gold); margin-bottom: 4px;
-}
-
-.iw-clock-ar {
-  font-family: var(--arabic); font-size: 1.05rem;
-  color: var(--text3); margin-bottom: 10px;
-}
-
-.iw-clock-val {
-  font-family: var(--mono); font-size: clamp(2rem, 5vw, 2.8rem);
-  font-weight: 700; color: var(--text2); line-height: 1;
-  text-shadow: 0 0 15px rgba(255,255,255,0.15);
-  letter-spacing: .05em;
-}
-.iw-clock-val.gold {
-  color: var(--gold2);
-  text-shadow: 0 0 20px rgba(252,225,141,0.4);
-}
-
-.iw-clock-sub {
-  font-size: .7rem; color: var(--text3); margin-top: 8px;
-  letter-spacing: .08em; font-weight: 500;
-}
-
-.iw-diff {
-  text-align: center; margin-top: 20px;
-  font-size: .95rem; font-weight: 600;
-  letter-spacing: .06em; padding-top: 16px;
-  border-top: 1px dashed var(--border);
-}
-
-/* Parameter Cards Grid */
-.iw-params-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
-  gap: 12px;
-}
-
-.iw-param-card {
-  background: rgba(0,0,0,0.3); border: 1px solid var(--border-s);
-  border-radius: 14px; padding: 16px; text-align: center;
-  transition: border-color .3s;
-}
-.iw-param-card:hover { border-color: var(--gold); }
-
-.iw-param-lbl {
-  font-size: .68rem; font-weight: 700; letter-spacing: .15em;
-  text-transform: uppercase; color: var(--gold); margin-bottom: 4px;
-}
-
-.iw-param-ar {
-  font-family: var(--arabic); font-size: 1.05rem;
-  color: var(--text3); margin-bottom: 10px;
-}
-
-.iw-param-val {
-  font-family: var(--mono); font-size: 1.25rem;
-  font-weight: 700; color: #fff;
-}
-.iw-param-val.pos { color: var(--green); text-shadow: 0 0 8px rgba(100,217,156,.35); }
-.iw-param-val.neg { color: var(--amber); text-shadow: 0 0 8px rgba(252,177,59,.35); }
-
-/* Tabel Istiwa */
-.iw-col { color: var(--gold2) !important; font-weight: 600; }
+/* Eclipse panel */
+.ec-type-badge { ... }     /* Badge jenis gerhana */
+.ec-contact-grid { ... }   /* Grid waktu kontak */
+.ec-diagram { ... }        /* SVG diagram umbra */
+.ec-upcoming-tbl { ... }   /* Tabel gerhana mendatang */
 ```
+
+### 3.5 Modifikasi File
+
+| File | Perubahan |
+|---|---|
+| `index.html` | Tambah tab "Gerhana" + panel `#panel-gerhana` |
+| `style.css` | Tambah CSS eclipse |
+| `js/eclipse.js` | BARU — semua logika gerhana |
+| `js/ui.js` | Tambah `renderEclipse()` ke `renderAll()` |
+| `js/main.js` | Load sequence (tidak perlu ubah) |
+| `js/copypdf.js` | Tambah `exportEclipsePDF()` |
+
+### 3.6 Estimasi Waktu: ~4 jam
 
 ---
 
-### FASE 4 — Modifikasi `main.js`
+## 4. Versi v2.7.0 — Grafik Visibilitas Hilal
 
-**Task 4.1** — Tambah `tickIstiwa()` di interval yang sama dengan `tickCountdown()`:
+### 4.1 Dasar Algoritma
 
-```js
-// Baris 149-150 saat ini:
-tickCountdown();
-setInterval(tickCountdown, 1000);
+Data yang sudah ada dari `hilal.js` (tinggi hilal, elongasi) digunakan untuk memplot grafik 12 bulan.
 
-// Menjadi:
-tickCountdown();
-tickIstiwa();
-setInterval(() => { tickCountdown(); tickIstiwa(); }, 1000);
+**Library Chart.js** akan ditambahkan (satu-satunya external library baru):
+```html
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 ```
 
-**Task 4.2** — Tambah `renderIstiwa()` di dalam `renderAll()` di `ui.js`:
+### 4.2 Data yang Diplot
+
+Untuk setiap bulan dalam 1 tahun Hijriyah yang dipilih:
+- **Tinggi Hilal Hakiki** (garis biru)
+- **Elongasi Geocentric** (garis hijau)
+- **Garis referensi IRNU:** Tinggi 3°, Elongasi 6.4° (garis emas horizontal)
+- **Garis referensi Odeh:** Elongasi 6.4°, Arc of Light (ARCL) 6.4°
+
+### 4.3 UI Panel
+
+**Ditambahkan ke panel `#panel-hilal` yang sudah ada** (bukan tab baru):
+
+```
++--------------------------------------------------+
+|  HISAB AWAL BULAN  [Form Hilal yang sudah ada]   |
++--------------------------------------------------+
+|  HASIL HISAB [Sudah ada]                         |
++--------------------------------------------------+
+|  GRAFIK VISIBILITAS HILAL (Baru v2.7.0)          |
+|  Tahun Hijriyah: [1447] [Generate Grafik]        |
+|  [Chart.js Canvas — Bar Chart + Line Chart]      |
+|  [Legend: IRNU | Odeh | Yallop]                  |
++--------------------------------------------------+
+|  TABEL SINKRONISASI 12 BULAN (Baru v2.7.0)       |
+|  Bulan | Awal Bulan M | Tinggi | Elongasi | Ket. |
+|  Muharram | 12 Jul 2025 | 3.45° | 7.12° | ✓ IRNU|
+|  ...                                             |
++--------------------------------------------------+
+```
+
+### 4.4 File Baru: `js/hilalchart.js`
+
+```js
+/**
+ * hilalchart.js — Grafik Visibilitas Hilal & Sinkronisasi Kalender
+ * Al-Fajri v2.7.0
+ * Depends on: math.js, astro.js, hilal.js
+ * External: Chart.js v4
+ */
+
+// Generate data 12 bulan untuk 1 tahun Hijriyah
+function generateHilalYearData(hijriYear) {
+  const data = [];
+  for (let month = 1; month <= 12; month++) {
+    const result = calcHilal(hijriYear, month, LAT, LNG, TZ, ELEV);
+    data.push({ month, ...result });
+  }
+  return data;
+}
+
+// Render grafik Chart.js
+function renderHilalChart(data) {...}
+
+// Render tabel sinkronisasi
+function renderSyncTable(data) {...}
+
+// Handler tombol generate
+function doGenerateHilalChart() {...}
+```
+
+### 4.5 Estimasi Waktu: ~3 jam
+
+---
+
+## 5. Versi v2.8.0 — Jam Astronomi & Sinkronisasi Kalender
+
+### 5.1 Formula Jam Astronomi
+
+**Greenwich Sidereal Time (GST):**
+```
+JD0 = JD pada UT=0 hari ini
+T = (JD0 - 2451545.0) / 36525
+θ₀ = 100.4606184 + 36000.77004*T + 0.000387933*T² - T³/38710000
+GST = θ₀ + 360.98564724*(UT_hours/24)
+GST = GST mod 360
+```
+
+**Local Sidereal Time (LST):**
+```
+LST = GST + LNG (°)  →  konversi ke jam
+LST_hours = LST / 15
+```
+
+**Hour Angle Matahari:**
+```
+HA = LST - AR_Matahari
+```
+
+### 5.2 File Baru: `js/astroclock.js`
+
+```js
+/**
+ * astroclock.js — Jam Astronomi Real-Time
+ * Al-Fajri v2.8.0
+ * Depends on: math.js, astro.js
+ */
+
+function calcGST(jd_ut) {...}       // Hitung GST
+function calcLST(gst, lng) {...}    // Hitung LST
+function fmtAngleToTime(deg) {...}  // Konversi sudut ke HH:MM:SS
+
+// tick — dipanggil setiap detik
+function tickAstroClock() {
+  const now = new Date();
+  const utH = now.getUTCHours() + now.getUTCMinutes()/60 + now.getUTCSeconds()/3600;
+  const jd_ut = jd(now.getUTCFullYear(), now.getUTCMonth()+1, now.getUTCDate(), utH);
+  const gst = calcGST(jd_ut);
+  const lst = calcLST(gst, LNG);
+  // Render ke DOM
+  document.getElementById('aclkUT').textContent  = fmtIstiwaHMS(utH);
+  document.getElementById('aclkGST').textContent = fmtAngleToTime(gst);
+  document.getElementById('aclkLST').textContent = fmtAngleToTime(lst);
+}
+
+function renderAstroClock() {...}   // Render panel statis (posisi matahari/bulan saat ini)
+```
+
+### 5.3 UI Panel
+
+**Tab baru:** "Jam Astro" (setelah Gerhana)
+
+```
++---------------------------------------------------+
+|  JAM ASTRONOMI REAL-TIME                          |
+|  UT:  12:47:23  |  GST: 07:12:45  |  LST: 14:43: |
++---------------------------------------------------+
+|  POSISI MATAHARI KINI                             |
+|  AR: 03h 41m 22s  |  Dec: +22°14'  |  HA: ...    |
+|  Az: 215.4°  |  Alt: +62.3°                      |
++---------------------------------------------------+
+|  POSISI BULAN KINI                                |
+|  AR: 14h 22m 11s  |  Dec: -18°22'  |  Iluminasi: |
+|  Az: 185.2°  |  Alt: +45.1°                      |
++---------------------------------------------------+
+```
+
+### 5.4 Estimasi Waktu: ~3 jam
+
+---
+
+## 6. Versi v2.9.0 — Ephemeris Detail
+
+### 6.1 Data yang Ditambahkan ke Panel Ephemeris
+
+Perluasan dari tabel ephemeris yang sudah ada dengan data toposentris:
+
+| Parameter | Geosentris | Toposentris |
+|---|---|---|
+| Bujur Ekliptika (λ) | ✅ | ✅ (baru) |
+| Lintang Ekliptika (β) | ✅ | ✅ (baru) |
+| AR & Deklinasi | ✅ | ✅ (baru) |
+| Jarak | ✅ | ✅ (baru) |
+| Parallax | ✅ | ✅ (baru, toposentris HP) |
+| Altitude & Azimuth | ❌ | ✅ (baru) |
+| Refraksi Atmosfer | ❌ | ✅ (baru) |
+
+### 6.2 Formula Toposentris
+
+```js
+// Parallax in altitude (Moon)
+function topoParallax(geoRA, geoDec, HP, lat, h, lst) {
+  // Meeus Eq 40.6
+  const sinPi = Math.sin(HP * D2R);
+  const rhoSinPhi = ... // observer lat correction
+  const rhoCosePhi = ...
+  const dRA = ...       // parallax in RA
+  const dDec = ...      // parallax in Dec
+  return { topoRA: geoRA + dRA, topoDec: geoDec + dDec };
+}
+
+// Altitude & Azimuth dari AR & Dec
+function equatorialToHorizon(ra, dec, lst, lat) {
+  const ha = lst - ra;
+  const alt = Math.asin(sin(dec)*sin(lat) + cos(dec)*cos(lat)*cos(ha));
+  const az = Math.atan2(-cos(dec)*cos(lat)*sin(ha), sin(dec)-sin(lat)*sin(alt));
+  return { alt: alt*R2D, az: fix(az*R2D) };
+}
+
+// Refraksi atmosfer (Meeus formula)
+function atmosphericRefraction(altDeg) {
+  if (altDeg > 85) return 0;
+  const R = 1.02 / Math.tan((altDeg + 10.3/(altDeg + 5.11)) * D2R) / 60;
+  return R; // degrees
+}
+```
+
+### 6.3 Modifikasi: `js/astro.js`
+
+Tambahkan fungsi `topoParallax()`, `equatorialToHorizon()`, `atmosphericRefraction()`.
+
+### 6.4 Modifikasi: `js/ui.js`
+
+Perluas `renderEphemeris()` dengan baris data toposentris + altitude/azimuth + refraksi.
+
+### 6.5 Estimasi Waktu: ~3 jam
+
+---
+
+## 7. Versi v3.0.0 — Multi-Algoritma Waktu Sholat
+
+### 7.1 Algoritma Target
+
+| Algoritma | Sumber | Tersedia |
+|---|---|---|
+| Jean Meeus | Buku "Astronomical Algorithms" | ✅ Sudah ada |
+| Irsyadul Murid | Kitab Falak klasik (Asy-Syekh Ahmad Ghozali) | 🔴 Perlu implementasi |
+
+### 7.2 Metode Irsyadul Murid (Taqribi)
+
+Algoritma taqribi (pendekatan tabel) yang banyak digunakan di pesantren salaf Indonesia:
+
+```
+// Kulminasi
+noon = 12 - (LNG - 105) / 15 - EqT/60
+
+// Subuh: saat Matahari -20° (atau -18° tergantung madzhab)
+// Menggunakan rumus ta'dil/taqribi:
+t_subuh = acos(-sin(-20°) + sin(Dec)*sin(Lat)) / (cos(Dec)*cos(Lat))
+t_subuh = t_subuh / 15  // jam
+subuh = noon - t_subuh
+
+// dan seterusnya...
+```
+
+### 7.3 Implementasi di `js/prayer.js`
+
+Tambahkan parameter `algo` ke `prayerTimes()`:
+
+```js
+function prayerTimes(year, month, day, lat, lng, tz, elev, algo='jeanmeeus') {
+  if (algo === 'irsyadulmurid') {
+    return _prayerTimesIrsyadulMurid(year, month, day, lat, lng, tz, elev);
+  }
+  // Existing Jean Meeus code...
+}
+```
+
+### 7.4 UI Perubahan
+
+Tambahkan dropdown di panel `#panel-sholat`:
+
+```html
+<select id="algoSelect">
+  <option value="jeanmeeus">Jean Meeus (Astronomi Modern)</option>
+  <option value="irsyadulmurid">Irsyadul Murid (Taqribi Klasik)</option>
+</select>
+```
+
+### 7.5 Estimasi Waktu: ~5 jam
+
+---
+
+## 8. Panduan Teknis Umum
+
+### 8.1 Konvensi Kode
+
+```js
+// Header wajib setiap file modul baru
+/**
+ * nama-file.js — Deskripsi modul
+ * Al-Fajri vX.X.X | Lembaga Falakiyah PCNU Kencong
+ * Depends on: math.js, astro.js [daftar dependencies]
+ */
+'use strict';
+```
+
+### 8.2 Pola Render Standar
+
+Setiap modul baru **WAJIB** mengikuti pola ini:
+
+```js
+// Fungsi render statis (dipanggil dari renderAll di ui.js)
+function renderNamaModul() {
+  if (!dataDependency) return; // Guard clause
+  // ... render DOM
+}
+
+// Fungsi tick realtime (jika perlu, dipanggil dari interval di main.js)
+function tickNamaModul() {
+  const el = document.getElementById('id-elemen');
+  if (!el) return; // Guard clause
+  // ... update DOM
+}
+```
+
+### 8.3 Pattern Guard Wiring (main.js)
+
+```js
+// Pattern yang sudah dipakai dan wajib diikuti:
+if (typeof tickIstiwa === 'function') tickIstiwa();
+if (typeof tickAstroClock === 'function') tickAstroClock();
+
+setInterval(() => {
+  tickCountdown();
+  if (typeof tickIstiwa === 'function') tickIstiwa();
+  if (typeof tickAstroClock === 'function') tickAstroClock();
+}, 1000);
+```
+
+### 8.4 Pattern Guard Render (ui.js)
 
 ```js
 function renderAll() {
@@ -484,120 +486,79 @@ function renderAll() {
   renderKonversi();
   renderImsakiyah();
   renderEphemeris();
-  renderIstiwa(); // ← TAMBAH
+  if (typeof renderIstiwa === 'function') renderIstiwa();        // v2.5.0
+  if (typeof renderEclipse === 'function') renderEclipse();      // v2.6.0
+  if (typeof renderAstroClock === 'function') renderAstroClock(); // v2.8.0
 }
 ```
 
----
+### 8.5 Aturan Penambahan CSS
 
-### FASE 5 — Modifikasi `prayer.js`
-
-**Task 5.1** — Pastikan `prayerTimes()` me-return `eqt` dan `noonRaw` (sudah ada):
-
-```js
-return {
-  // ... waktu sholat ...
-  noonRaw: noon,
-  dec: sun.Dec,
-  eqt: sun.EqT   // ← pastikan ini sudah ada (sudah ada di v2.3.2)
-};
-```
-
-Tidak perlu modifikasi — nilai ini sudah ada.
+- **JANGAN** edit class yang sudah ada — hanya tambah class baru
+- Prefix class baru dengan singkatan modul: `iw-` (istiwa), `ec-` (eclipse), `ac-` (astro clock)
+- Selalu gunakan CSS variables (`var(--gold)`, `var(--card)`, dll.)
+- Tambahkan media query `@media(max-width: 560px)` untuk setiap layout grid/flex
 
 ---
 
-## 5. Urutan Pengerjaan & Estimasi Waktu
+## 9. Commit Strategy Per Versi
 
-| # | Task | File | Estimasi |
-|---|---|---|---|
-| 1 | Buat `js/istiwa.js` lengkap | istiwa.js (BARU) | 45 menit |
-| 2 | Tambah tab + panel HTML | index.html | 20 menit |
-| 3 | Tambah CSS class baru | style.css | 20 menit |
-| 4 | Modifikasi main.js (tick + render) | main.js, ui.js | 10 menit |
-| 5 | Testing & verifikasi kalkulasi | — | 15 menit |
-| **Total** | | | **~110 menit** |
+```bash
+# v2.6.0 Gerhana
+git add public/js/eclipse.js
+git commit -m "feat(eclipse): add solar & lunar eclipse calculation engine"
 
----
+git add public/index.html public/css/style.css public/js/ui.js
+git commit -m "feat(eclipse): add Eclipse UI panel, tab, and styles"
 
-## 6. Urutan Script Loading (Final)
+git tag -a v2.6.0 -m "Al-Fajri v2.6.0 - Modul Gerhana Matahari & Bulan"
+git push origin main --tags
 
-```html
-<script src="js/math.js"></script>      <!-- Layer 1: Utilities -->
-<script src="js/astro.js"></script>     <!-- Layer 2: Astronomical calc -->
-<script src="js/prayer.js"></script>    <!-- Layer 3: Prayer times + cache -->
-<script src="js/hilal.js"></script>     <!-- Layer 3: Hilal calc -->
-<script src="js/ui.js"></script>        <!-- Layer 4: Panel renders -->
-<script src="js/copypdf.js"></script>   <!-- Layer 5: Export -->
-<script src="js/istiwa.js"></script>    <!-- Layer 5: Istiwa module (BARU) -->
-<script src="js/main.js"></script>      <!-- Layer 6: Init (HARUS TERAKHIR) -->
+# v2.7.0 Grafik Hilal
+git add public/js/hilalchart.js
+git commit -m "feat(hilal): add hilal visibility chart (Chart.js)"
+
+# v2.8.0 Jam Astronomi
+git add public/js/astroclock.js
+git commit -m "feat(astroclock): add real-time astronomical clock (GST/LST)"
+
+# v3.0.0 Multi-Algo
+git commit -m "feat(prayer): add Irsyadul Murid algorithm option"
 ```
 
 ---
 
-## 7. Verifikasi & Testing
+## 10. Ringkasan Timeline Estimasi
 
-### 7.1 Verifikasi Manual (Kalkulasi)
+| Versi | Fitur Utama | Estimasi Jam |
+|---|---|---|
+| v2.6.0 | Gerhana Matahari & Bulan | ~4 jam |
+| v2.7.0 | Grafik Visibilitas Hilal | ~3 jam |
+| v2.8.0 | Jam Astronomi + Sinkronisasi Kalender | ~3 jam |
+| v2.9.0 | Ephemeris Detail (toposentris) | ~3 jam |
+| v3.0.0 | Multi-Algoritma Waktu Sholat | ~5 jam |
+| **Total** | | **~18 jam** |
 
-Untuk Kencong (LNG=113.4203, TZ=7), pada tanggal tertentu:
-1. Buka tab Ephemeris → catat nilai EqT
-2. Hitung manual: Koreksi Bujur = (113.4203 - 105) / 15 × 60 = **33.68 menit**
-3. Total Selisih = 33.68 + EqT (menit)
-4. Bandingkan dengan nilai di panel Istiwa
-5. Bandingkan waktu Dzuhur Istiwa dengan nilai `noonRaw - 12` × 60
-
-### 7.2 Verifikasi Konverter
-
-| Input (Lokal) | Expected Istiwa (Kencong, EqT≈+3.2 mnt) |
-|---|---|
-| 12:00:00 WIB | 12:36:53 Istiwa |
-| 13:00:00 WIB | 13:36:53 Istiwa |
-| 06:00:00 WIB | 06:36:53 Istiwa |
-
-### 7.3 Cek Regresi
-
-- [ ] Panel Sholat masih berfungsi normal
-- [ ] Countdown tidak lag
-- [ ] Panel Hilal, Ephemeris, Imsakiyah masih normal
-- [ ] GPS detect masih bekerja
-- [ ] Responsif di mobile
+> **Estimasi ini mengasumsikan** tidak ada blocking bug, dan formula Jean Meeus sudah dikuasai. Waktu aktual bisa lebih singkat karena pola kode sudah mapan.
 
 ---
 
-## 8. Checklist Pre-Deploy
+## 11. Checklist Pre-Deploy (Setiap Versi)
 
-- [ ] `istiwa.js` sudah di-load sebelum `main.js`
-- [ ] `renderIstiwa()` dipanggil di `renderAll()`
-- [ ] `tickIstiwa()` dipanggil di interval 1 detik
-- [ ] Semua ID HTML unik (tidak bentrok dengan modul lain)
-- [ ] CSS baru tidak override style yang sudah ada
-- [ ] Versi footer di-update: `v2.4` → `v2.5`
-- [ ] Git commit dengan pesan deskriptif
+- [ ] Semua file JS baru di-load sebelum `main.js`
+- [ ] Fungsi render baru dipanggil dengan guard `typeof` di `ui.js`
+- [ ] Fungsi tick baru dipanggil di interval `main.js`
+- [ ] Semua ID HTML unik
+- [ ] CSS prefix konsisten, tidak override class lama
+- [ ] Versi di footer di-update
+- [ ] `docs/devlog.md` di-update
+- [ ] Verifikasi kalkulasi manual untuk minimal 1 kasus uji
+- [ ] Test regresi: tab lama masih berfungsi
+- [ ] Test responsif mobile (320px) dan desktop (1100px)
+- [ ] Git commit + tag + push berhasil
 - [ ] Vercel auto-deploy berhasil
 
 ---
 
-## 9. Commit Strategy
-
-```bash
-# Commit 1: Core module
-git add public/js/istiwa.js
-git commit -m "feat(istiwa): add Jam Istiwa core module (istiwa.js)"
-
-# Commit 2: UI integration
-git add public/index.html public/css/style.css
-git commit -m "feat(istiwa): add Istiwa tab, panel HTML, and CSS"
-
-# Commit 3: Wiring
-git add public/js/main.js public/js/ui.js
-git commit -m "feat(istiwa): wire renderIstiwa() and tickIstiwa() to main loop"
-
-# Tag versi
-git tag -a v2.5.0 -m "Al-Fajri v2.5.0 - Modul Jam Istiwa"
-git push origin main --tags
-```
-
----
-
-*DevPlan ini disiapkan oleh: Antigravity AI Assistant*
-*Untuk: Lembaga Falakiyah PCNU Kencong — Proyek Al-Fajri v2.5.0*
+*DevPlan ini adalah living document — diperbarui setiap sesi pengembangan*
+*Disusun: Antigravity AI | Referensi: Kanzul Falak CHANGELOG v3.10.0, Jean Meeus "Astronomical Algorithms" 2nd ed.*

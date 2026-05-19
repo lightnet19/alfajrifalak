@@ -35,3 +35,19 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - Ditambahkan styling elemen jam ganda dan tabel di `public/css/style.css`.
   - Di-wire interval realtime clock dengan `tickIstiwa()` di `main.js`.
   - Di-wire render UI panel istiwa di `ui.js`.
+
+---
+
+## [2026-05-19] - Riset & Pembaruan Perencanaan
+- **Status:** Selesai
+- **Kegiatan:**
+  - Mempelajari secara mendalam repositori & CHANGELOG **Kanzul Falak** (v1.0–v3.10.0) karya Andi Hasan Ashari.
+  - Menganalisis peta fitur Kanzul Falak dan memetakan fitur yang belum ada di Al-Fajri.
+  - Memperbarui `docs/prd.md` menjadi **Living Document** berisi roadmap komprehensif seluruh versi (v2.5.0 s/d v3.x).
+  - Memperbarui `docs/devplan.md` dengan rencana teknis detail untuk 5 versi mendatang (v2.6.0–v3.0.0) termasuk formula, pseudocode, dan arsitektur file.
+- **Fitur yang Akan Dibangun (Prioritas Tinggi):**
+  - v2.6.0: Gerhana Matahari & Bulan (Jean Meeus Chapter 54-55)
+  - v2.7.0: Grafik Visibilitas Hilal (Chart.js)
+  - v2.8.0: Jam Astronomi Realtime (GST/LST)
+  - v2.9.0: Ephemeris Detail Toposentris
+  - v3.0.0: Multi-Algoritma Waktu Sholat (Irsyadul Murid)
