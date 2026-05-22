@@ -10,6 +10,7 @@ var LAT  = -8.2664;
 var LNG  = 113.4203;
 var ELEV = 11;
 var TZ   = 7;
+var HIJRI_OFFSET = 1;
 var ALGO = 'jeanmeeus';
 var IHTIYAT = 2;
 
@@ -51,6 +52,7 @@ function applyLoc() {
   LAT  = la;  LNG  = ln;
   ELEV = parseFloat(document.getElementById('inpElev').value) || 0;
   TZ   = parseFloat(document.getElementById('inpTZ').value)   || 7;
+  HIJRI_OFFSET = parseInt(document.getElementById('inpHijriOffset').value) || 0;
   const markaz = document.getElementById('inpMarkaz').value || 'Markaz';
   setLocStatus(`📍 ${markaz} | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
   renderAll();

@@ -207,4 +207,18 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
 - **Pengujian:**
   - Debug mandiri dengan Node.js mengonfirmasi bahwa untuk Dzulhijjah 1447 H, `predJD = 2461177.5` dan `jdG(predJD+0.5)` menghasilkan **17 Mei 2026 (Ahad Wage)** — sesuai fakta rukyat.
 
+---
+
+## [2026-05-22] - Feature: Koreksi Tanggal Hijriyah (Hijri Offset)
+- **Status:** Selesai ✅
+- **Konteks:** Kalender Hijriyah standar aplikasi dikalkulasi dengan algoritma aritmatika baku (`jdToHijri`). Algoritma baku ini terkadang berselisih 1 hari lebih cepat/lambat dibandingkan dengan hasil observasi rukyat hilal setempat. Contohnya pada 1447 H, 1 Dzulhijjah secara rukyat adalah 18 Mei 2026, tetapi secara matematis adalah 19 Mei 2026.
+- **Solusi:** Menambahkan input "Koreksi H" (Hijri Offset) di antarmuka (default `+1`) yang memungkinkan pengguna mengubah kesenjangan matematis ini.
+- **File Dimodifikasi:**
+  - `public/index.html`: Penambahan tag `<input type="number" id="inpHijriOffset" value="1" step="1">` di baris lokasi.
+  - `public/js/main.js`: Membaca value input tersebut dan menyimpannya di variabel global `HIJRI_OFFSET`.
+  - `public/js/math.js`: Menambahkan fungsi perhitungan `jd0 + offset` di dalam blok `jdToHijri()` dan `hijriToJD()`.
+- **Pengujian:**
+  - Telah di-deploy dan terbukti mampu mensinkronkan tanggal kalender UI (22 Mei Masehi siang menjadi 4 Dzulhijjah, malam menjadi 5 Dzulhijjah sesuai hisab Dzulhijjah 1447 H).
+
+
 

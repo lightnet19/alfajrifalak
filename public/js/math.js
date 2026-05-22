@@ -98,7 +98,8 @@ function isHLeap(y) { return [2,5,7,10,13,15,18,21,24,26,29].includes(y % 30); }
  * Based on the tabular Islamic calendar (arithmetic approximation).
  */
 function jdToHijri(jd0) {
-  const z=Math.floor(jd0)+0.5, N=z-1948438.5;
+  const offset = (typeof HIJRI_OFFSET !== 'undefined') ? HIJRI_OFFSET : 0;
+  const z=Math.floor(jd0 + offset)+0.5, N=z-1948438.5;
   const cyc=Math.floor(N/10631), rem=N-10631*cyc, jv=Math.floor((rem-29.5001)/354.3671);
   const hY=30*cyc+jv+1;
 
@@ -117,8 +118,9 @@ function jdToHijri(jd0) {
  * REWRITE v2.4.1: Using standard 30-year cycle arithmetic
  */
 function hijriToJD(hy, hm, hd) {
+  const offset = (typeof HIJRI_OFFSET !== 'undefined') ? HIJRI_OFFSET : 0;
   return 1948439.5 + Math.floor((10631 * hy - 10617) / 30)
-      + Math.floor((325 * hm - 320) / 11) + hd - 1;
+      + Math.floor((325 * hm - 320) / 11) + hd - 1 - offset;
 }
 
 /** JD → Weton Jawa */
