@@ -170,3 +170,26 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - Diuji mandiri dengan berbagai tanggal penting (17 Agustus 1945 -> Jumat Legi, 14 Februari 2024 -> Rabu Legi, 18 Mei 2026 -> Senin Kliwon, 22 Mei 2026 -> Jumat Wage, 1 Oktober 2023 -> Ahad Kliwon) dan 100% lulus pengujian.
   - Diverifikasi langsung melalui antarmuka visual kalkulator hilal di UI aplikasi.
 
+---
+
+## [2026-05-22] - v2.4.1 Bugfix: Prediksi Tanggal Awal Bulan Meleset Satu Hari
+- **Status:** Selesai ✅
+- **Versi:** v2.4.1
+- **Bug:** Prediksi tanggal awal bulan (berdasarkan kriteria IRNU) yang ditampilkan pada laporan hilal selalu meleset **satu hari ke depan** dari tanggal yang sebenarnya. Contoh: untuk Dzulhijjah 1447 H, ijtima terjadi dini hari 17 Mei 2026 (Ahad Wage) dan hilal terlihat pada maghrib 17 Mei, namun aplikasi menampilkan prediksi **18 Mei 2026 (Senin Kliwon)** — seharusnya **17 Mei 2026 (Ahad Wage)**.
+- **Root Cause:**
+  - Di `hilal.js`, variabel `predJD` merupakan keluaran dari loop yang menggunakan `obsJD` (bertipe `obsBase`). Nilai `obsBase` sendiri sudah berformat **JD tengah malam UT** (yaitu bilangan bulat + 0.5, misal `2461177.5` = 17 Mei 2026 jam 00:00 UT).
+  - Ketika hasilnya dikonversi ke tanggal Gregorian dan weton, kode lama menggunakan:
+    - `jdG(predJD + 1.5)` → menambah 1 hari penuh yang tidak perlu, sehingga hasilnya 18 Mei bukan 17 Mei.
+    - `weton(predJD + 1.5)` → sama, weton menjadi *Senin Kliwon* bukan *Ahad Wage*.
+  - Offset yang benar untuk mendapatkan **tengah hari (noon) dari tanggal yang sama** adalah `+0.5`, bukan `+1.5`.
+- **Formula yang Benar:**
+  - `const predGreg = predJD ? jdG(predJD + 0.5) : null;`
+  - `const predWtn  = predJD ? weton(predJD + 0.5) : '—';`
+- **File Diperbaiki:** `public/js/hilal.js`
+  - Mengubah `predJD+1.5` → `predJD+0.5` pada baris kalkulasi `predGreg`.
+  - Mengubah `predJD+1.5` → `predJD+0.5` pada baris kalkulasi `predWtn`.
+  - Memperbarui versi header dan footer laporan dari `v2.4.0` ke `v2.4.1`.
+- **Pengujian:**
+  - Debug mandiri dengan Node.js mengonfirmasi bahwa untuk Dzulhijjah 1447 H, `predJD = 2461177.5` dan `jdG(predJD+0.5)` menghasilkan **17 Mei 2026 (Ahad Wage)** — sesuai fakta rukyat.
+
+
