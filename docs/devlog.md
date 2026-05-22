@@ -153,3 +153,20 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - `getIstiwaOffset()`: dibalik dari `noonRaw - 12` → `12 - noonRaw`
   - `renderIstiwa()`: idem
   - Komentar diperjelas untuk menguraikan logika arah offset
+
+---
+
+## [2026-05-22] - Bugfix: Koreksi Perhitungan Weton Jawa
+- **Status:** Selesai ✅
+- **Bug:** Perhitungan weton Jawa (hari pasaran) bergeser maju sebanyak 2 hari pasaran (misalnya 18 Mei 2026 yang seharusnya *Senin Kliwon* terhitung sebagai *Senin Pahing*, dan 22 Mei 2026 yang seharusnya *Jumat Wage* terhitung sebagai *Jumat Legi*).
+- **Root Cause:**
+  - Formula pencarian indeks pasaran `p` di `math.js`: `const p=((Math.floor(jd0+0.5)+2)%5+5)%5;` memiliki pergeseran offset `+2` yang salah.
+  - Pergeseran tersebut ditambahkan karena asumsi yang keliru bahwa epoch Hijriyah (1 Muharram 1 H / 15 Juli 622 M, JDN 1948439) adalah *Thursday Pahing* (indeks 1), padahal yang benar secara historis adalah **Thursday Kliwon** (indeks 4).
+- **Formula yang Benar:** `const p=((Math.floor(jd0+0.5))%5+5)%5;`
+- **File Diperbaiki:** `public/js/math.js`
+  - Memperbaiki rumus pasaran `p` dengan menghapus offset `+2`.
+  - Memperbarui komentar referensi epoch agar secara akurat mencatat `JD 1948438.5 = Thu = Kliwon (4)`.
+- **Pengujian:**
+  - Diuji mandiri dengan berbagai tanggal penting (17 Agustus 1945 -> Jumat Legi, 14 Februari 2024 -> Rabu Legi, 18 Mei 2026 -> Senin Kliwon, 22 Mei 2026 -> Jumat Wage, 1 Oktober 2023 -> Ahad Kliwon) dan 100% lulus pengujian.
+  - Diverifikasi langsung melalui antarmuka visual kalkulator hilal di UI aplikasi.
+

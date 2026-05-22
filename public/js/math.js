@@ -124,7 +124,7 @@ function hijriToJD(hy, hm, hd) {
 /** JD → Weton Jawa */
 function weton(jd0) {
   const g=jdG(jd0), dow=new Date(g.year,g.month-1,g.day).getDay();
-  // JD 1948438.5 = Thu = Pahing (1)
-  const p=((Math.floor(jd0+0.5)+2)%5+5)%5;
+  // JD 1948438.5 = Thu = Kliwon (4)
+  const p=((Math.floor(jd0+0.5))%5+5)%5;
   return `${DAY_ID[dow]} ${PASARAN[p]}`;
 }
