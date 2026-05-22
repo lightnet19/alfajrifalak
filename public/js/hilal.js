@@ -5,10 +5,11 @@
  * Depends on: math.js, astro.js
  *
  * CHANGELOG v2.4.1:
- *  - FIX: predGreg & predWtn offset corrected from +1.5 → +0.5
- *    predJD is an obsBase-style JD (integer+0.5 = midnight UT), so
- *    adding +1.5 wrongly advanced the displayed date by one day.
- *    +0.5 gives noon of the correct prediction day.
+ *  - predGreg & predWtn retain +1.5 offset (CORRECT):
+ *    predJD = obsBase-style JD (e.g. 2461177.5 = midnight 17 May).
+ *    +1.5 → noon of 18 May = 1 Dzulhijjah daytime (correct, because
+ *    hilal seen on evening of 17 May → new Islamic day = 18 May Gregorian).
+ *    This session: reverted erroneous +0.5 patch back to +1.5.
  *
  * CHANGELOG v2.4.0:
  *  - FIX: obsBase now uses LOCAL date via jdG(jdIjtima + tz/24)
@@ -144,8 +145,8 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
     if (tmar>=3.0&&telG>=6.4) { predJD=to; break; }
     if (d>=3&&!predJD) predJD=to+1;
   }
-  const predGreg = predJD?jdG(predJD+0.5):null;
-  const predWtn  = predJD?weton(predJD+0.5):'—';
+  const predGreg = predJD?jdG(predJD+1.5):null;
+  const predWtn  = predJD?weton(predJD+1.5):'—';
 
   // FIX v2.4.0: ijtimaGreg uses LOCAL date, not UT date
   const ijtimaGregLocal = jdG(jdIjtima + tz/24);

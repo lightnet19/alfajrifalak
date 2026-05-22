@@ -189,6 +189,21 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - Mengubah `predJD+1.5` → `predJD+0.5` pada baris kalkulasi `predGreg`.
   - Mengubah `predJD+1.5` → `predJD+0.5` pada baris kalkulasi `predWtn`.
   - Memperbarui versi header dan footer laporan dari `v2.4.0` ke `v2.4.1`.
+- **Koreksi (sesi yang sama):**
+  - Setelah investigasi lebih lanjut, diketahui bahwa fix `predJD+0.5` ini SALAH. Perhitungan awal `predJD+1.5` sudah benar (hilal terlihat malam 17 Mei → 1 Dzulhijjah = 18 Mei Masehi). Perubahan ini langsung di-revert kembali ke `predJD+1.5`.
+
+---
+
+## [2026-05-22] - v2.3.3 Fix: Kalender Hijriyah Kini Memperhitungkan Konvensi Maghrib
+- **Status:** Selesai ✅
+- **Versi:** v2.3.3 (ui.js)
+- **Konteks:** Dalam kalender Hijriyah/Islam, hari baru dimulai saat **Maghrib (matahari terbenam)**, bukan tengah malam Gregorian. Dengan demikian, sejak saat Maghrib hari Ahad Wage (17 Mei 2026), secara Hijriyah sudah masuk **1 Dzulhijjah 1447 H** (yang secara Gregorian setara dengan hari Senin Kliwon 18 Mei 2026). Sebelumnya, aplikasi hanya menampilkan tanggal Hijriyah berdasarkan tanggal Masehi tengah malam, tanpa memperhitungkan transisi saat Maghrib ini.
+- **File Dimodifikasi:** `public/js/ui.js`
+- **Perubahan:**
+  - **Tambah fungsi `getCurrentHijri()`** — helper baru yang menghitung tanggal Hijriyah yang berlaku saat ini dengan mengambil waktu Maghrib dari `prayerTimes()`, lalu membandingkannya dengan jam saat ini. Jika sudah lewat Maghrib, JD yang dipakai untuk konversi Hijriyah digeser +1 hari.
+  - **Update `renderHijri()`** — menggunakan `getCurrentHijri()`. Jika sudah lewat Maghrib, menampilkan badge kecil ` (malam)` di samping tanggal, dan menandai tanggal aktif di grid kalender dengan tanda `*` beserta tooltip penjelasan.
+  - **Update `renderImsakiyah()`** — mengubah kolom `Hijri` menjadi `Hijri (Malam)`. Setiap baris kini menampilkan tanggal Hijriyah yang berlaku mulai Maghrib hari itu (yaitu Hijri untuk hari Masehi berikutnya), lengkap dengan tooltip nama bulan penuh. Ini secara eksplisit menunjukkan "malam" dalam kalender Hijriyah.
+
 - **Pengujian:**
   - Debug mandiri dengan Node.js mengonfirmasi bahwa untuk Dzulhijjah 1447 H, `predJD = 2461177.5` dan `jdG(predJD+0.5)` menghasilkan **17 Mei 2026 (Ahad Wage)** — sesuai fakta rukyat.
 

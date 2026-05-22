@@ -1,21 +1,68 @@
 /**
  * ui.js — Render semua panel: Hijri, Bulan, Kiblat, Konversi, Imsakiyah, Ephemeris
- * Al-Fajri v2.3.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v2.3.3 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js, prayer.js
  *
  * CHANGELOG:
+ *  v2.3.3 (2026-05-22):
+ *   - FIX: renderHijri & renderImsakiyah kini memperhitungkan konvensi
+ *     kalender Hijriyah: hari baru dimulai saat Maghrib, bukan tengah malam.
+ *     Jika waktu saat ini sudah melewati Maghrib, tanggal Hijriyah yang
+ *     ditampilkan maju satu hari (= tanggal Hijriyah malam ini).
  *  v2.3.2 (2026-04-15):
  *   - Tambah kolom Dhuha ke tabel Imsakiyah
  */
 'use strict';
 
+// ── Helper: Tanggal Hijriyah saat ini (Maghrib-aware) ──
+/**
+ * Mengembalikan tanggal Hijriyah yang berlaku sekarang.
+ * Konvensi Islam: hari baru dimulai saat Maghrib.
+ * Jika jam saat ini >= waktu Maghrib hari ini → kembalikan Hijri untuk
+ * hari Masehi BESOK (karena secara Hijriyah sudah masuk hari berikutnya).
+ *
+ * @returns {{ hijri, gregJD, afterMaghrib }}
+ *   hijri       — objek { year, month, day } Hijriyah yang berlaku
+ *   gregJD      — JD tanggal Masehi yang dipakai untuk konversi
+ *   afterMaghrib — true jika waktu sekarang sudah lewat Maghrib
+ */
+function getCurrentHijri() {
+  const now  = new Date();
+  const y    = now.getFullYear(), m = now.getMonth()+1, d = now.getDate();
+  const j0   = jd(y, m, d);
+
+  // Hitung waktu Maghrib hari ini (dalam menit lokal)
+  let maghribMin = null;
+  try {
+    const p = prayerTimes(y, m, d, LAT, LNG, TZ, ELEV);
+    if (p.maghrib && p.maghrib !== '—') {
+      const [hh, mm] = p.maghrib.split(':').map(Number);
+      maghribMin = hh * 60 + mm;
+    }
+  } catch(e) { /* gagal ambil maghrib, fallback ke tengah malam */ }
+
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const afterMaghrib = (maghribMin !== null) && (nowMin >= maghribMin);
+
+  // Jika sudah lewat Maghrib, tanggal Hijriyah = Hijri untuk besok
+  const gregJD = afterMaghrib ? j0 + 1 : j0;
+  const hijri  = jdToHijri(gregJD);
+
+  return { hijri, gregJD, afterMaghrib, maghribMin, y, m, d };
+}
+
 // ── HIJRI ──────────────────────────────────────────────
 function renderHijri() {
   const now = new Date();
-  const j0  = jd(now.getFullYear(), now.getMonth()+1, now.getDate());
-  const h   = jdToHijri(j0);
+  const { hijri: h, afterMaghrib } = getCurrentHijri();
+
+  // Label malam: tampilkan keterangan jika sudah masuk malam hari berikutnya
+  const malamLabel = afterMaghrib
+    ? `<span style="font-size:.72rem;color:var(--gold);opacity:.8"> (malam)</span>`
+    : '';
+
   document.getElementById('hijriDisp').innerHTML =
-    `<div class="hday">${h.day}</div>`+
+    `<div class="hday">${h.day}${malamLabel}</div>`+
     `<div class="hmon">${HM_AR[h.month-1]}</div>`+
     `<div class="hyr">${HM[h.month-1]} ${h.year} H</div>`+
     `<div class="hgreg">${now.toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>`;
@@ -29,7 +76,8 @@ function renderHijri() {
             `${HM[h.month-1]} ${h.year} H</div><div class="cal-g">`;
   ['Ahd','Sen','Sel','Rab','Kam','Jum','Sab'].forEach(d => cal += `<div class="cal-h">${d}</div>`);
   for (let i = 0; i < wd; i++) cal += `<div></div>`;
-  for (let d = 1; d <= total; d++) cal += `<div class="cal-c ${d===h.day?'td':''}">${d}</div>`;
+  for (let d = 1; d <= total; d++) cal += `<div class="cal-c ${d===h.day?'td':''}">` +
+    (d===h.day && afterMaghrib ? `<span title="Malam ini sudah masuk tanggal ini">${d}*</span>` : d) + `</div>`;
   document.getElementById('hijriCal').innerHTML = cal + '</div>';
 }
 
@@ -148,15 +196,19 @@ function renderImsakiyah() {
   document.getElementById('imsakTtl').textContent = now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
   document.getElementById('imsakSub').textContent =
     `${HM[hFirst.month-1]} ${hFirst.year} H | ${document.getElementById('inpMarkaz').value}`;
-  // Kolom: Tgl | Hijri | Imsak | Subuh | Syuruq | Dhuha | Dzuhur | Ashar | Maghrib | Isya
-  let html = `<thead><tr><th class="kc">Tgl</th><th class="kc">Hijri</th>`+
+  // Kolom: Tgl | Hijri (malam) | Imsak | Subuh | Syuruq | Dhuha | Dzuhur | Ashar | Maghrib | Isya
+  let html = `<thead><tr><th class="kc">Tgl</th><th class="kc" title="Tanggal Hijriyah yang berlaku mulai Maghrib hari ini (malam hari berikutnya)">Hijri (Malam)</th>`+
              `<th>Imsak</th><th>Subuh</th><th>Syuruq</th><th>Dhuha</th><th>Dzuhur</th>`+
              `<th>Ashar</th><th>Maghrib</th><th>Isya</th></tr></thead><tbody>`;
   for (let day = 1; day <= dInMonth; day++) {
     const p = prayerTimes(y, mo, day, LAT, LNG, TZ, ELEV);
-    const h = jdToHijri(jd(y, mo, day));
-    html += `<tr class="${day===now.getDate()?'today-row':''}">`+
-      `<td class="kc">${pZ(day)}/${pZ(mo)}</td><td class="kc">${h.day} ${HM[h.month-1].slice(0,5)}</td>`+
+    // Konvensi Hijriyah: tanggal Hijriyah di kolom ini adalah tanggal yang
+    // berlaku mulai Maghrib hari ini (= Hijri untuk hari Masehi BERIKUTNYA).
+    // Ini menunjukkan "malam" dalam kalender Hijriyah pada baris hari itu.
+    const hMalam = jdToHijri(jd(y, mo, day) + 1);
+    html += `<tr class="${day===now.getDate()?'today-row':''}">` +
+      `<td class="kc">${pZ(day)}/${pZ(mo)}</td>` +
+      `<td class="kc" title="Malam ${hMalam.day} ${HM[hMalam.month-1]} ${hMalam.year} H">${hMalam.day} ${HM[hMalam.month-1].slice(0,5)}</td>`+
       `<td>${p.imsak}</td><td>${p.fajr}</td><td>${p.syuruq}</td><td>${p.dhuha}</td>`+
       `<td>${p.dhuhr}</td><td>${p.ashr}</td><td>${p.maghrib}</td><td>${p.isya}</td></tr>`;
   }
