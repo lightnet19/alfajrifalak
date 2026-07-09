@@ -1,7 +1,11 @@
 /**
  * main.js — State global, init, tab, GPS, bintang
- * Al-Fajri v2.4.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v3.0.2 | Lembaga Falakiyah PCNU Kencong
  * HARUS dimuat TERAKHIR setelah semua modul lain.
+ *
+ * CHANGELOG v3.0.2 (2026-07-09):
+ *  - FIX: Hapus doCalcHilal() otomatis dari blok init.
+ *  - TAMBAH: _initHilalDefaults() untuk set bulan/tahun form secara dinamis.
  */
 'use strict';
 
@@ -173,11 +177,44 @@ function initAlgoListeners() {
   }
 }
 
+/**
+ * Inisialisasi default bulan & tahun di form hilal berdasarkan tanggal Hijriyah saat ini.
+ * Dipanggil sekali saat init. Tidak memicu kalkulasi hilal.
+ * FIX v3.0.2: Menggantikan doCalcHilal() otomatis yang menyesatkan.
+ */
+function _initHilalDefaults() {
+  try {
+    const now = new Date();
+    const currentHijri = jdToHijri(jd(now.getFullYear(), now.getMonth()+1, now.getDate()));
+
+    // Set tahun ke tahun Hijriyah saat ini
+    const yearEl = document.getElementById('hilalYear');
+    if (yearEl) yearEl.value = currentHijri.year;
+
+    // Set bulan: jika sudah lewat tanggal 20, pre-select bulan berikutnya
+    const monthEl = document.getElementById('hilalMonth');
+    if (monthEl) {
+      let targetMonth = currentHijri.month;
+      let targetYear = currentHijri.year;
+      if (currentHijri.day > 20) {
+        if (currentHijri.month >= 12) {
+          targetMonth = 1;
+          targetYear = currentHijri.year + 1;
+          if (yearEl) yearEl.value = targetYear;
+        } else {
+          targetMonth = currentHijri.month + 1;
+        }
+      }
+      monthEl.value = targetMonth;
+    }
+  } catch(e) { /* fallback ke default HTML jika ada error */ }
+}
+
 // ── Inisialisasi ──────────────────────────────────────
 setLocStatus(`📍 Pondok Pesantren Nuris Salafiyyah | ${LAT.toFixed(5)}°, ${LNG.toFixed(5)}° | UTC+${TZ}`, 'ok');
 initAlgoListeners();
+_initHilalDefaults();
 renderAll();
-doCalcHilal();
 tickCountdown();
 if (typeof tickIstiwa === 'function') tickIstiwa();
 if (typeof tickAstroClock === 'function') tickAstroClock();

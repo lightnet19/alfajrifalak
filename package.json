@@ -1,6 +1,6 @@
 {
   "name": "alfajri",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Al-Fajri — Aplikasi Hisab Falak Lembaga Falakiyah PCNU Kencong",
   "scripts": {
     "start": "serve public",

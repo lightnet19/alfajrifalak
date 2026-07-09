@@ -1,8 +1,14 @@
 /**
  * hilal.js — Kalkulasi Hilal & Render Laporan
  * Algoritma: Jean Meeus — Astronomical Algorithms 2nd ed.
- * Al-Fajri v2.4.1 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v3.0.2 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js
+ *
+ * CHANGELOG v3.0.2 (2026-07-09):
+ *  - FIX KRITIS: Ganti formula bestK dari |jdToHijri(jde).month-(hMonth-1)|
+ *    menjadi |jde-hijriToJD(hYear,hMonth,1)|. Memperbaiki bug di mana
+ *    kalkulasi Shafar 1448 H menampilkan hasil Muharram 1448 H.
+ *  - FIX: Range loop dk diperlebar dari -1..2 ke -2..2.
  *
  * CHANGELOG v2.4.1:
  *  - predGreg & predWtn retain +1.5 offset (CORRECT):
@@ -29,13 +35,18 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const markaz = document.getElementById('inpMarkaz').value || '—';
 
   // 1. Cari new moon JDE untuk hMonth/hYear
-  const approxGreg = jdG(hijriToJD(hYear, hMonth, 1) - 15);
+  // FIX v3.0.2: Cari new moon terdekat dengan JD awal bulan target.
+  // Strategi: bandingkan |jde - targetJD| secara langsung, bukan via jdToHijri.
+  // Ini menghindari ambiguitas di mana new moon bulan (B-1) mendapat skor lebih
+  // baik dari new moon bulan B karena formula hMonth-1 yang keliru.
+  const targetJD = hijriToJD(hYear, hMonth, 1);   // JD awal bulan target (aritmatika)
+  const approxGreg = jdG(targetJD - 15);           // mundur 15 hari sebagai anchor
   let baseK = kFromYM(approxGreg.year, approxGreg.month), bestDiff = 999, bestK = baseK;
-  for (let dk=-1; dk<=2; dk++) {
+  for (let dk=-2; dk<=2; dk++) {                   // diperlebar dari -1..2 ke -2..2
     const k = baseK + dk;
-    const jde=newMoonJDE(k), h=jdToHijri(jde);
-    const diff=Math.abs((h.year-hYear)*12+(h.month-(hMonth-1)));
-    if (diff<bestDiff) { bestDiff=diff; bestK=k; }
+    const jde = newMoonJDE(k);
+    const diff = Math.abs(jde - targetJD);         // selisih JDE vs targetJD (hari)
+    if (diff < bestDiff) { bestDiff = diff; bestK = k; }
   }
 
   const jdeTDT  = newMoonJDE(bestK);

@@ -16,6 +16,7 @@
 | v2.8.0 | Jam Astronomi & Sinkronisasi Kalender | ✅ Selesai |
 | v2.9.0 | Ephemeris Detail (Geosentris & Toposentris) | ✅ Selesai |
 | v3.0.1 | Multi-Algoritma & Bugfix Istiwa | ✅ Selesai |
+| v3.0.2 | Bugfix Kritis Perhitungan Hilal & Init Defaults | ✅ Selesai |
 | v3.x | PWA, Qodho, Tasbih, dll. | 📋 Direncanakan |
 
 ---

@@ -220,5 +220,23 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
 - **Pengujian:**
   - Telah di-deploy dan terbukti mampu mensinkronkan tanggal kalender UI (22 Mei Masehi siang menjadi 4 Dzulhijjah, malam menjadi 5 Dzulhijjah sesuai hisab Dzulhijjah 1447 H).
 
+---
+
+## [2026-07-09] - v3.0.2 Bugfix Kritis: Kalkulasi Hilal Bulan Salah
+- **Status:** Selesai ✅
+- **Versi:** v3.0.2
+- **Bug:** Mengklik "Hitung Hilal" untuk Awal Bulan Shafar 1448 H menampilkan hasil Awal Bulan Muharram 1448 H.
+- **Root Cause (Triple Bug):**
+  1. `hilal.js`: Formula `diff = |.month-(hMonth-1)|` dalam loop bestK menyebabkan new moon bulan sebelumnya selalu menang (diff=0). Untuk Shafar (hMonth=2), new moon Muharram dapat diff=0 (terbaik), Shafar dapat diff=1 → bestK selalu menunjuk ke Muharram.
+  2. `main.js`: `doCalcHilal()` otomatis saat init mengisi output dengan hasil default (Syawal 1447) sebelum user berinteraksi.
+  3. `index.html`: Default bulan=Syawal, tahun=1447 hardcoded.
+- **Fix Diterapkan:**
+  - `hilal.js`: Ganti `|jdToHijri(jde).month-(hMonth-1)|` → `|jde-hijriToJD(hYear,hMonth,1)|`
+  - `hilal.js`: Perlebar range dk dari `-1..2` ke `-2..2`
+  - `main.js`: Hapus `doCalcHilal()` dari init, tambah `_initHilalDefaults()`
+  - `index.html`: Pindah `selected` ke Muharram (1), ubah tahun default ke 1448
+- **File Diperbaiki:** `public/js/hilal.js`, `public/js/main.js`, `public/index.html`
+
+
 
 
