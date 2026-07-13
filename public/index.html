@@ -170,18 +170,94 @@
 </div>
 
 <div class="panel" id="panel-qibla">
+
+  <!-- HERO: Kompas Canvas Utama -->
+  <div class="card qb-hero-card">
+    <!-- Status Bar -->
+    <div id="qbStatusBar" class="qb-status-bar">
+      <span class="qb-badge qb-badge-static">○ Statis</span>
+    </div>
+
+    <!-- Canvas Kompas -->
+    <div class="qb-compass-wrap">
+      <canvas id="qbCanvas" width="280" height="280"></canvas>
+    </div>
+
+    <!-- Heading perangkat -->
+    <div class="qb-heading-display">
+      <div class="qb-heading-val" id="qbDeviceHeading">— °</div>
+      <div class="qb-heading-lbl">Arah Perangkat (dari Utara)</div>
+      <div class="qb-accuracy" id="qbAccuracy"></div>
+    </div>
+  </div>
+
+  <!-- DATA: Info Kiblat -->
   <div class="card">
-    <div class="card-hd">Arah Kiblat</div>
-    <div class="qwrap">
-      <div class="compass"><span class="cpd n">U</span><span class="cpd s">S</span><span class="cpd e">T</span><span class="cpd w">B</span><div class="cpneedle" id="cpN"></div><div class="cpcen"></div></div>
-      <div>
-        <div class="qdr"><div class="qdl">Azimuth Kiblat</div><div class="qdv" id="qAz">--<span> dari Utara</span></div></div>
-        <div class="qdr"><div class="qdl">Arah Kompas</div><div class="qdv" id="qDir">--</div></div>
-        <div class="qdr"><div class="qdl">Jarak ke Makkah</div><div class="qdv" id="qDist">--<span> km</span></div></div>
-        <div class="qdr"><div class="qdl">Koordinat Ka'bah</div><div style="font-size:.8rem;color:var(--text2)">21.4225 LU, 39.8262 BT</div></div>
+    <div class="card-hd">🕋 Data Kiblat</div>
+    <div class="qb-data-grid">
+      <div class="qb-data-item">
+        <div class="qb-data-lbl">Azimuth dari Utara</div>
+        <div class="qb-data-val big" id="qbAzimuth">--</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:5px">UTARA (0°) → TIMUR (90°) → SELATAN (180°)</div>
+      </div>
+      <div class="qb-data-item">
+        <div class="qb-data-lbl">Arah Kompas</div>
+        <div class="qb-data-val big" id="qbDir">--</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:5px">16 Mata Angin</div>
+      </div>
+      <div class="qb-data-item">
+        <div class="qb-data-lbl">Dari Selatan (Falak)</div>
+        <div class="qb-data-val" id="qbFromSouth">--</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:5px">Metode Pesantren Salaf</div>
+      </div>
+      <div class="qb-data-item">
+        <div class="qb-data-lbl">Jarak ke Makkah</div>
+        <div class="qb-data-val" id="qbDist">--<span>km</span></div>
       </div>
     </div>
   </div>
+
+  <!-- Rashdul Qiblah -->
+  <div class="card">
+    <div class="card-hd">⏰ Rashdul Qiblah</div>
+    <div id="qbRashdulGrid" class="qb-rashdul-grid">
+      <div class="qb-rashdul-item" style="grid-column:1/-1;color:var(--text3);font-size:.82rem;padding:18px">
+        Menghitung Rashdul Qiblah...
+      </div>
+    </div>
+    <div style="font-size:.7rem;color:var(--text3);margin-top:12px;line-height:1.6;padding-top:12px;border-top:1px dashed rgba(200,164,74,0.15)">
+      <strong style="color:var(--gold)">Rashdul Qiblah Harian</strong> — Saat bayangan benda tegak lurus mengarah tepat ke Ka'bah. Ukur bayangan benda di luar ruangan pada waktu ini. 
+      <strong style="color:var(--gold)">Tahunan</strong> — Matahari tepat di atas Ka'bah (27–28 Mei &amp; 15–16 Juli ±12:18 MAKKAH).
+    </div>
+  </div>
+
+  <!-- Info Ka'bah -->
+  <div class="card">
+    <div class="card-hd">🌍 Informasi Ka'bah &amp; Koordinat</div>
+    <div id="qbKaabahInfo">
+      <div class="qb-kaabah-row">
+        <div class="qb-kaabah-lbl">Koordinat Ka'bah</div>
+        <div class="qb-kaabah-val">21° 25′ 21.17″ LU &nbsp;·&nbsp; 39° 49′ 34.06″ BT</div>
+      </div>
+      <div class="qb-kaabah-row">
+        <div class="qb-kaabah-lbl">Markaz Anda</div>
+        <div class="qb-kaabah-val" id="qbMarkaz">--</div>
+      </div>
+      <div class="qb-kaabah-row">
+        <div class="qb-kaabah-lbl">Koordinat Anda</div>
+        <div class="qb-kaabah-val" id="qbCoords">--</div>
+      </div>
+      <div class="qb-kaabah-row">
+        <div class="qb-kaabah-lbl">Beda Lintang</div>
+        <div class="qb-kaabah-val" id="qbDiffLat">--</div>
+      </div>
+      <div class="qb-kaabah-row">
+        <div class="qb-kaabah-lbl">Beda Bujur</div>
+        <div class="qb-kaabah-val" id="qbDiffLng">--</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="panel" id="panel-konversi">
@@ -378,7 +454,7 @@
   <div class="ft-n">AL-FAJRI</div>
   <div class="ft-o">Lembaga Falakiyah PCNU Kencong</div>
   <div class="ft-a">&#1604;&#1580;&#1606;&#1577; &#1575;&#1604;&#1601;&#1604;&#1603;&#1610;&#1577; &mdash; PCNU &#1603;&#1606;&#1580;&#1608;&#1606;&#1580;</div>
-  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v3.0.3</div>
+  <div class="ft-c">Dibuat atas permintaan Lembaga Falakiyah PCNU Kencong &middot; Jean Meeus Astronomical Algorithms &middot; v3.1.0</div>
 </footer>
 </div>
 

@@ -1,11 +1,12 @@
 /**
  * main.js — State global, init, tab, GPS, bintang
- * Al-Fajri v3.0.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v3.1.0 | Lembaga Falakiyah PCNU Kencong
  * HARUS dimuat TERAKHIR setelah semua modul lain.
  *
- * CHANGELOG v3.0.2 (2026-07-09):
- *  - FIX: Hapus doCalcHilal() otomatis dari blok init.
- *  - TAMBAH: _initHilalDefaults() untuk set bulan/tahun form secara dinamis.
+ * CHANGELOG v3.1.0 (2026-07-13):
+ *  - FITUR: Kompas Kiblat Live menggunakan Web DeviceOrientation API
+ *  - FITUR: Rashdul Qiblah harian & tahunan
+ *  - FITUR: Kompas Canvas baru dengan 10 layer rendering + animasi smooth
  */
 'use strict';
 
@@ -216,8 +217,9 @@ initAlgoListeners();
 _initHilalDefaults();
 renderAll();
 tickCountdown();
-if (typeof tickIstiwa === 'function') tickIstiwa();
+if (typeof tickIstiwa     === 'function') tickIstiwa();
 if (typeof tickAstroClock === 'function') tickAstroClock();
+if (typeof initQiblaCompass === 'function') initQiblaCompass();
 setInterval(() => {
   tickCountdown();
   if (typeof tickIstiwa === 'function') tickIstiwa();
