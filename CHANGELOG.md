@@ -6,7 +6,7 @@ Format ini didasarkan pada [Keep a Changelog](https://keepachangelog.com/id/1.0.
 
 ---
 
-## [3.0.2-patch1] - 2026-07-13
+## [3.0.3-patch1] - 2026-07-13
 ### Added
 - Dokumen formal `CHANGELOG.md` dan `version.txt` pada direktori root untuk standarisasi versi rilis.
 - Laporan audit sistem komprehensif (`audit_report.md`) berisi tinjauan detail dan evaluasi akurasi perhitungan.
@@ -20,11 +20,11 @@ Format ini didasarkan pada [Keep a Changelog](https://keepachangelog.com/id/1.0.
   - Memperbaiki properti kulminasi dari `p.dzuhurRaw` menjadi `p.noonRaw`.
   - Merefaktor pemetaan jadwal sholat yang sebelumnya menggunakan key `*Raw` yang tidak eksis menjadi pembacaan langsung dari string waktu terformat.
 - **Dead Code Modul Gerhana:** Pembersihan variabel sisa pengembangan (`absGam`, `u2`, `gamma`, dan `gammaAbs`) pada file `eclipse.js`.
-- **Konsistensi Teks UI:** Sinkronisasi string versi rilis pada footer `index.html` dan header laporan hilal `hilal.js` ke `v3.0.2`.
+- **Konsistensi Teks UI:** Sinkronisasi string versi rilis pada footer `index.html` dan header laporan hilal `hilal.js` ke `v3.0.3`.
 
 ---
 
-## [3.0.2] - 2026-07-09
+## [3.0.3] - 2026-07-09
 ### Added
 - Fungsi inisialisasi default bulan/tahun Hijriyah di form hilal secara dinamis berdasarkan tanggal hari ini (`_initHilalDefaults()`).
 
@@ -98,3 +98,7 @@ Format ini didasarkan pada [Keep a Changelog](https://keepachangelog.com/id/1.0.
 - **Koreksi Tanggal Hijriyah (Hijri Offset):** Menambahkan input dinamis "Koreksi H" untuk sinkronisasi hasil kalkulasi kalender aritmatika dengan rukyatul hilal riil.
 - **Konvensi Transisi Maghrib:** Penanggalan Hijriyah kini mendeteksi waktu terbenam matahari (Maghrib) setempat. Jika waktu saat ini telah melewati Maghrib, penanggalan Hijriyah otomatis maju satu hari ke malam berikutnya (disertai indikator malam aktif).
 - Lokalisasi pencarian GPS menggunakan nominatim reverse geocoding API.
+
+## [3.0.3] - 2026-07-13
+### Fixed
+- Fix `jdToHijri` leap year synchronization bug that caused Hijri calendar dates to display one month behind.

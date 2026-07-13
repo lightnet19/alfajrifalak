@@ -91,7 +91,7 @@ const HM_AR = [
 const DAY_ID  = ['Ahad','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 const PASARAN = ['Legi','Pahing','Pon','Wage','Kliwon'];
 
-function isHLeap(y) { return [2,5,7,10,13,15,18,21,24,26,29].includes(y % 30); }
+function isHLeap(y) { return [2,5,7,10,13,16,18,21,24,26,29].includes(y % 30); }
 
 /** 
  * JD (UT) → Hijriyah {year,month,day}
@@ -99,18 +99,17 @@ function isHLeap(y) { return [2,5,7,10,13,15,18,21,24,26,29].includes(y % 30); }
  */
 function jdToHijri(jd0) {
   const offset = (typeof HIJRI_OFFSET !== 'undefined') ? HIJRI_OFFSET : 0;
-  const z=Math.floor(jd0 + offset)+0.5, N=z-1948438.5;
-  const cyc=Math.floor(N/10631), rem=N-10631*cyc, jv=Math.floor((rem-29.5001)/354.3671);
-  const hY=30*cyc+jv+1;
-
-  let jDay=Math.floor(rem-354.3671*jv);
-  const md=[0,30,29,30,29,30,29,30,29,30,29,30,29];
-  for (let m=1; m<=12; m++) {
-    const days=(m===12&&isHLeap(hY))?30:md[m];
-    if (jDay<=days) return {year:hY,month:m,day:jDay};
-    jDay-=days;
-  }
-  return {year:hY,month:12,day:jDay};
+  const z = Math.floor(jd0 + offset) + 0.5;
+  const N = z - 1948439.5;
+  const cyc = Math.floor(N / 10631);
+  const rem = N - 10631 * cyc;
+  const jv = Math.floor((30 * rem + 10646) / 10631) - 1;
+  const year = 30 * cyc + jv + 1;
+  const elapsed = Math.floor((10631 * (jv + 1) - 10617) / 30);
+  const jDay = rem - elapsed;
+  const month = Math.floor((11 * jDay + 330) / 325);
+  const day = jDay - Math.floor((325 * month - 320) / 11) + 1;
+  return {year, month, day};
 }
 
 /**

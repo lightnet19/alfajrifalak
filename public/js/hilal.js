@@ -1,10 +1,10 @@
 /**
  * hilal.js — Kalkulasi Hilal & Render Laporan
  * Algoritma: Jean Meeus — Astronomical Algorithms 2nd ed.
- * Al-Fajri v3.0.2 | Lembaga Falakiyah PCNU Kencong
+ * Al-Fajri v3.0.3 | Lembaga Falakiyah PCNU Kencong
  * Depends on: math.js, astro.js
  *
- * CHANGELOG v3.0.2 (2026-07-09):
+ * CHANGELOG v3.0.3 (2026-07-09):
  *  - FIX KRITIS: Ganti formula bestK dari |jdToHijri(jde).month-(hMonth-1)|
  *    menjadi |jde-hijriToJD(hYear,hMonth,1)|. Memperbaiki bug di mana
  *    kalkulasi Shafar 1448 H menampilkan hasil Muharram 1448 H.
@@ -35,7 +35,7 @@ function calcHilal(hYear, hMonth, lat, lng, elev, tz) {
   const markaz = document.getElementById('inpMarkaz').value || '—';
 
   // 1. Cari new moon JDE untuk hMonth/hYear
-  // FIX v3.0.2: Cari new moon terdekat dengan JD awal bulan target.
+  // FIX v3.0.3: Cari new moon terdekat dengan JD awal bulan target.
   // Strategi: bandingkan |jde - targetJD| secara langsung, bukan via jdToHijri.
   // Ini menghindari ambiguitas di mana new moon bulan (B-1) mendapat skor lebih
   // baik dari new moon bulan B karena formula hMonth-1 yang keliru.
@@ -206,7 +206,7 @@ function renderHilalReport(r) {
   const hijI=jdToHijri(r.jdIjtima);
 
   let h=`<span style="display:block;text-align:center;font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--gold2)">Awal Bulan ${HM[r.hMonth-1]} ${r.hYear} H</span>\n`;
-  h+=`<span style="display:block;text-align:center;color:var(--text2);font-size:.72rem">Al-Fajri v3.0.2 — Lembaga Falakiyah PCNU Kencong | Jean Meeus (${MLR.length}+${MB.length} Suku)</span>\n`;
+  h+=`<span style="display:block;text-align:center;color:var(--text2);font-size:.72rem">Al-Fajri v3.0.3 — Lembaga Falakiyah PCNU Kencong | Jean Meeus (${MLR.length}+${MB.length} Suku)</span>\n`;
   h+=sep();
   h+=row('Markaz',r.markaz)+row('Lintang',latStr)+row('Bujur',lngStr);
   h+=row('Elevasi',r.elev.toFixed(1)+' mdpl')+row('Zona Waktu','UTC+'+r.tz);
@@ -261,7 +261,7 @@ function renderHilalReport(r) {
   h+=row('Wujudul Hilal',r.wujud?'✓ TERPENUHI':'✗ Tidak Terpenuhi',r.wujud?'g':'r');
   h+=row('Odeh',r.qOdeh>=5.65?'A — Mudah':r.qOdeh>=2?'B — Terlihat':r.qOdeh>=-0.96?'C — Marginal':'D — Tidak',r.qOdeh>=2?'g':r.qOdeh>=-0.96?'a':'r');
   h+='\n'+row('Prediksi Kri. IRNU',pred,'gd');
-  h+=sep()+`<span style="display:block;text-align:center;color:var(--text3);font-size:.68rem">Al-Fajri v3.0.2 — Jean Meeus — Lembaga Falakiyah PCNU Kencong</span>`;
+  h+=sep()+`<span style="display:block;text-align:center;color:var(--text3);font-size:.68rem">Al-Fajri v3.0.3 — Jean Meeus — Lembaga Falakiyah PCNU Kencong</span>`;
   document.getElementById('hilalOut').innerHTML=h;
 
   // Kartu kriteria
