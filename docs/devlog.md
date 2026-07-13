@@ -256,6 +256,48 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   8. **`astroclock.js` (Bug Minor):** Memperbaiki formula iluminasi bulan yang terbalik dari `(1 + cos(elong)) / 2 * 100` menjadi `(1 - cos(elong)) / 2 * 100` agar menunjuk ke 0% saat bulan baru.
 - **File Diperbaiki:** `public/js/api.js`, `public/js/eclipse.js`, `public/index.html`, `public/js/astroclock.js`, `public/js/hilal.js`
 
+---
+
+## [2026-07-13] - v3.0.3 Bugfix: Kalender Hijriyah Meleset Satu Bulan
+- **Status:** Selesai ✅
+- **Versi:** v3.0.3
+- **Bug:** Bagian "Kalender Bulan Ini" pada tab KALENDER menampilkan tanggal dan bulan yang salah (terlambat satu bulan penuh, misal seharusnya Muharram 1448 H tetapi tampil Dzulhijjah 1447 H).
+- **Root Cause:**
+  - Fungsi `jdToHijri` di `math.js` memiliki formula pencarian tahun dalam siklus 30-tahunan (`jv`) yang tidak presisi: `Math.floor((rem - 29.5001) / 354.3671)`. Saat sisa hari (`rem`) bernilai tertentu (misal `2508` pada 13 Juli 2026), formula tersebut menghasilkan `jv = 6` (seharusnya `7`), sehingga variabel tahun `hY` tertinggal 1 tahun dan sisa harinya meluap melewati 355 hari. Hal ini berakibat bulan Hijriyah meluap ke Dzulhijjah tahun sebelumnya.
+  - Pendeteksian tahun kabisat `isHLeap()` juga salah meletakkan tahun kabisat ke-15 (seharusnya tahun ke-16) dalam siklus 30 tahun.
+- **Fix Diterapkan:**
+  - Menulis ulang `jdToHijri()` agar menggunakan formula invers matematis yang presisi terhadap `hijriToJD()`:
+    - `jv = Math.floor((30 * rem + 10646) / 10631) - 1`
+    - `elapsed = Math.floor((10631 * (jv + 1) - 10617) / 30)`
+    - `jDay = rem - elapsed`
+    - `month = Math.floor((11 * jDay + 330) / 325)`
+    - `day = jDay - Math.floor((325 * month - 320) / 11) + 1`
+  - Memperbaiki tahun kabisat ke-16 di `isHLeap()`: mengganti array element `15` dengan `16`.
+- **File Diperbaiki:** `public/js/math.js` (dan menaikkan nomor versi di `package.json`, `version.txt`, `public/index.html`, `public/js/hilal.js`).
+
+---
+
+## [2026-07-13] - v3.1.0 Feature: Kompas Kiblat Live
+- **Status:** Selesai ✅
+- **Versi:** v3.1.0
+- **Konteks:** Fitur Kiblat sebelumnya bersifat statis (hanya menampilkan arah relatif dan jarum yang dirotasi secara tetap).
+- **Solusi:** Menjadikan arah kiblat live/real-time dengan mengintegrasikan sensor kompas perangkat menggunakan Web DeviceOrientation API dan menggambar kompas interaktif berbasis Canvas 2D.
+- **Fitur Baru & Detail Teknis:**
+  - **Live Sensor Orientation:** Membaca heading arah perangkat lewat `webkitCompassHeading` (iOS) atau `alpha` (Android absolute).
+  - **iOS Permission Handling:** Tombol "Aktifkan Kompas Live" khusus iOS 13+ untuk meminta izin DeviceOrientation secara eksplisit.
+  - **Canvas Drawing Compass:** Kompas 2D Canvas digambar dengan 10 layer dinamis, lengkap dengan arah mata angin, derajat, jarum kompas warna gradasi emas-merah, ikon Ka'bah `🕋` yang selalu menunjuk kiblat, dan status ring luar berwarna hijau berdenyut saat LIVE.
+  - **Smooth Damping Animation:** Menerapkan Low-Pass Filter Exponential (`0.12`) dan `requestAnimationFrame` agar jarum dan kompas berputar dengan halus tanpa jitter/patah-patah.
+  - **Kalkulasi Tambahan:** 
+    - Azimuth dari Selatan (membantu pembacaan falak pesantren salaf).
+    - Rashdul Qiblah Harian (jam saat bayangan tegak lurus menunjuk Makkah) dan Rashdul Qiblah Tahunan (ketika matahari tepat di atas Ka'bah tanggal 27-28 Mei & 15-16 Juli).
+    - Informasi beda bujur dan beda lintang ke Ka'bah secara detail.
+- **File Dimodifikasi:**
+  - `public/css/style.css`: Penambahan gaya kelas `qb-` untuk layout hero kompas, status bar, badge, canvas, data grid, dan Rashdul Qiblah card.
+  - `public/index.html`: Perombakan total layout `#panel-qibla` menggunakan Canvas dan grid baru.
+  - `public/js/ui.js`: Penggantian `renderQibla()` statis menjadi modul kompas live lengkap dengan perhitungan astronomis matahari dan Rashdul Qiblah.
+  - `public/js/main.js`: Pemicu fungsi `initQiblaCompass()` saat inisialisasi awal.
+
+
 
 
 

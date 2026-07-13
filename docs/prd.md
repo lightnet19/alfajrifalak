@@ -1,7 +1,7 @@
 # 📋 Product Requirements Document (PRD)
 ## Al-Fajri Falak — Roadmap Pengembangan Komprehensif
 **Lembaga Falakiyah PCNU Kencong**
-**Versi Dokumen:** 2.0.1 | **Diperbarui:** 2026-07-13 | **Status:** Living Document
+**Versi Dokumen:** 2.0.2 | **Diperbarui:** 2026-07-13 | **Status:** Living Document
 
 ---
 
@@ -139,6 +139,15 @@ Menjadi referensi digital falakiyah berbasis web paling lengkap dan akurat di In
 - Perbaikan algoritma pencarian lunasi target (`bestK`) untuk hisab awal bulan.
 - Inisialisasi default bulan/tahun Hijriyah di form secara dinamis berdasarkan tanggal hari ini.
 - Penghapusan kalkulasi hilal otomatis saat load awal untuk mencegah data hasil yang tidak akurat.
+
+### ✅ v3.0.3 (SELESAI) — Bugfix Perhitungan Kalender Hijriyah
+- Perbaikan algoritma `jdToHijri` untuk konversi Julian Day ke Hijriyah yang meleset satu bulan karena kesalahan pada pencarian tahun kabisat (`jv`) dalam siklus 30-tahunan.
+- Koreksi tahun kabisat ke-16 pada pengecekan `isHLeap()`.
+
+### ✅ v3.1.0 (SELESAI) — Kompas Kiblat Live & Rashdul Qiblah
+- Kompas Arah Kiblat Real-time dengan sensor magnetik (DeviceOrientation API) dan UI Canvas 2D beranimasi smooth (low-pass exponential filter + requestAnimationFrame).
+- Kalkulasi waktu Rashdul Qiblah Harian dan Rashdul Qiblah Tahunan untuk kalibrasi arah kiblat fisik.
+- Data penentuan sudut azimuth dari Selatan dan informasi koordinat Ka'bah detail.
 
 ### 🟢 v3.x — Fitur Tambahan
 - Qodho Sholat (kalkulasi sholat yang perlu diqodho)
@@ -280,6 +289,8 @@ Menjadi referensi digital falakiyah berbasis web paling lengkap dan akurat di In
 | v3.0.1 | Multi-Algoritma & Bugfix Istiwa | Semua algoritma bisa dipilih, hasil berbeda dinamis, Ihtiyat dinamis berfungsi, perbaikan tanda offset Istiwa ✅ |
 | v3.0.2 | Bugfix Kritis Perhitungan Hilal | Pemilihan lunasi target akurat untuk semua bulan (termasuk Shafar), form diinisialisasi dinamis, tidak ada pemanggilan kalkulasi otomatis saat init ✅ |
 | v3.0.2-patch1 | Audit Komprehensif & Perbaikan Bug Sistem | Laporan audit selesai, semua 8 bug diperbaiki, syntax check 12 file JS lolos 100% ✅ |
+| v3.0.3 | Bugfix Kritis Perhitungan Kalender Hijriyah | Masalah bulan Hijriyah meleset 1 bulan diperbaiki, math.js modular, sinkronisasi jdToHijri dan hijriToJD 100% ✅ |
+| v3.1.0 | Kompas Kiblat Live & Rashdul Qiblah | Kompas bergerak live via DeviceOrientation, rendering canvas smooth tanpa lag, Rashdul Qiblah harian & tahunan berfungsi ✅ |
 
 ---
 

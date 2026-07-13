@@ -1,7 +1,7 @@
 # 🛠️ Development Plan (DevPlan) — Komprehensif
 ## Al-Fajri Falak — Roadmap Teknis Jangka Panjang
 **Referensi PRD:** docs/prd.md | **Inspiras:** Kanzul Falak v3.10.0
-**Versi Dokumen:** 2.0.1 | **Diperbarui:** 2026-07-13
+**Versi Dokumen:** 2.0.2 | **Diperbarui:** 2026-07-13
 
 ---
 
@@ -18,6 +18,8 @@
 | v3.0.1 | Multi-Algoritma & Bugfix Istiwa | ✅ Selesai |
 | v3.0.2 | Bugfix Kritis Perhitungan Hilal & Init Defaults | ✅ Selesai |
 | v3.0.2-patch1 | Audit Komprehensif & Perbaikan Bug Sistem | ✅ Selesai |
+| v3.0.3 | Bugfix Kritis Perhitungan Kalender Hijriyah | ✅ Selesai |
+| v3.1.0 | Kompas Kiblat Live (Sensor API & Canvas) & Rashdul Qiblah | ✅ Selesai |
 | v3.x | PWA, Qodho, Tasbih, dll. | 📋 Direncanakan |
 
 ---

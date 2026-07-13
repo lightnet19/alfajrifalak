@@ -1,7 +1,7 @@
 # 🌙 Al-Fajri Falak — Sistem Hisab Astronomi Islam Modern & Klasik
 
 > ✨ Aplikasi web *client-side* premium untuk perhitungan hisab astronomi Islam komprehensif, dikembangkan khusus atas arahan dan kebutuhan **Lembaga Falakiyah PCNU Kencong**.  
-> **Versi:** `v3.0.2` | **Rilis:** `2026-05-22`
+> **Versi:** `v3.1.0` | **Rilis:** `2026-07-13`
 
 Al-Fajri Falak menggabungkan ketelitian sains modern berbasis algoritma astronomi tingkat tinggi **Jean Meeus (*Astronomical Algorithms*)** dengan metodologi perhitungan salaf klasik **Irsyadul Murid**. Sistem ini sepenuhnya berjalan di sisi klien (*client-side*) tanpa *backend overhead*, menawarkan visualisasi interaktif yang responsif, serta terintegrasi penuh dengan penentuan lokasi berbasis GPS.
 
@@ -17,7 +17,7 @@ Al-Fajri Falak menggabungkan ketelitian sains modern berbasis algoritma astronom
 | 🌗 **Modul Gerhana (Solar & Lunar)** | Deteksi gerhana Matahari & Bulan (semua jenis: Total, Cincin, Sebagian, Penumbral) dalam rentang 2 tahun ke depan lengkap dengan waktu kontak global (C1-C4) dan magnitudo maksimum berbasis Jean Meeus Ch. 54-55. |
 | 🪐 **Ephemeris Detail Toposentris** | Tabel parameter data posisi benda langit super detail (geosentris vs toposentris) mencakup deklinasi, *Hour Angle*, jarak observer, semidiameter, horizontal parallax, altitude, azimuth, refraksi Bennett, dan tinggi terbias. |
 | 🌌 **Jam Astronomi (Sidereal Time)**| Jam real-time *Greenwich Mean Sidereal Time* (GMST) dan *Local Sidereal Time* (LST) beserta pemantauan koordinat azimut/altitude Matahari & Bulan setiap detik. |
-| 🧭 **Arah Kiblat & Geodetik** | Kompas geodetik interaktif untuk menentukan arah Ka'bah dari lokasi pengamat secara real-time lengkap dengan garis arah kiblat dan jarak langsung ke Makkah. |
+| 🧭 **Kompas Kiblat Live & Geodetik** | Kompas interaktif real-time menggunakan Web DeviceOrientation API (live sensor perangkat) dengan visualisasi kompas 2D Canvas beranimasi smooth, arah azimuth kiblat dari Utara & Selatan, jarak ke Makkah, koordinat Ka'bah, serta waktu Rashdul Qiblah (harian & tahunan). |
 | 📅 **Kalender & Konversi Tanggal** | Konversi kalender dua arah Masehi ↔ Hijriyah ↔ Julian Day lengkap dengan sistem penanggalan pasaran Jawa (weton) presisi. Mendukung pergantian hari Hijriyah otomatis saat masuk waktu Maghrib dan sistem koreksi manual. |
 
 ---
