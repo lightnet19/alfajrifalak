@@ -237,6 +237,26 @@ Dokumen ini digunakan untuk mencatat riwayat perubahan, keputusan teknis, dan ke
   - `index.html`: Pindah `selected` ke Muharram (1), ubah tahun default ke 1448
 - **File Diperbaiki:** `public/js/hilal.js`, `public/js/main.js`, `public/index.html`
 
+---
+
+## [2026-07-13] - Audit Komprehensif & Perbaikan Bug Sistem
+- **Status:** Selesai ✅
+- **Versi:** v3.0.2 (Maintenance / Patch 1)
+- **Kegiatan:**
+  - Melakukan audit menyeluruh terhadap 12 file JavaScript untuk memvalidasi presisi perhitungan dan fungsionalitas fitur.
+  - Memperbaiki 8 bug yang ditemukan pada panel kalkulasi astronomi, visualisasi antarmuka, dan integrasi API SDK eksternal.
+- **Bug & Perbaikan yang Diterapkan:**
+  1. **`api.js` (Bug Kritis):** Penulisan urutan parameter `calcHilal` terbalik (`hMonth, hYear` padahal signature `hYear, hMonth`) diperbaiki.
+  2. **`api.js` (Bug Serius):** Pemanggilan `toHoriz()` menggunakan case salah (`.ra`/`.dec` bukan `.RA`/`.Dec`) dan urutan parameter salah (`jD, lat, lng` padahal signature `lat, lng, jd0`) diperbaiki.
+  3. **`api.js` (Bug Serius):** Pemanggilan `searchEclipseNear` yang tidak ada diganti dengan `nextSolarEclipse` dan `nextLunarEclipse`.
+  4. **`api.js` (Bug Medium):** Pengambilan `p.dzuhurRaw` yang tidak ada diperbaiki menjadi `p.noonRaw`.
+  5. **`api.js` (Bug Medium):** Pemetaan key `imsakRaw`, `subuhRaw` dll. yang tidak ada direfactor untuk memetakan string hasil format langsung dari `prayerTimes()`.
+  6. **`eclipse.js` (Bug Medium):** Pembersihan variabel dead code `absGam`, `u2`, `gamma`, dan `gammaAbs` di modul gerhana.
+  7. **`index.html` (Bug Minor):** Memperbarui string versi di footer dari `v3.0.1` ke `v3.0.2` agar konsisten.
+  8. **`astroclock.js` (Bug Minor):** Memperbaiki formula iluminasi bulan yang terbalik dari `(1 + cos(elong)) / 2 * 100` menjadi `(1 - cos(elong)) / 2 * 100` agar menunjuk ke 0% saat bulan baru.
+- **File Diperbaiki:** `public/js/api.js`, `public/js/eclipse.js`, `public/index.html`, `public/js/astroclock.js`, `public/js/hilal.js`
+
+
 
 
 

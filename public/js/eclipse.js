@@ -197,18 +197,12 @@ function _solarEclipseForK(k) {
   const F1  = F - 0.02665 * sin(Om);
   const A1  = fix(299.77 + 0.107408 * k - 0.009173 * T2);
 
-  // u (Meeus Eq 54.1)
+  // u (Meeus Eq 54.1) — parameter penentuan jenis gerhana
   const u = 0.0059 + 0.0046 * E * cos(M) - 0.0182 * cos(Mp) + 0.0004 * cos(2 * Mp)
             - 0.0005 * cos(M + Mp);
-  const gamma = (0.5181 + u) * sin(F1) / Math.abs(sin(F1)); // signed
-  const gammaAbs = Math.abs(0.9972 - 1.534 * u + 0.0042 * sin(F1) * sin(F1));
-
-  // Penentuan jenis
-  const absGam = Math.abs(0.0000 + sin(F1)); // simpel
-  const u2 = 0.0047 + u; // magnitude
 
   let jenis, magnitude;
-  const gam = Math.abs(sin(F1)); // gamma approx
+  const gam = Math.abs(sin(F1)); // |sin(F1)| ≈ gamma (aproksimasi untuk klasifikasi)
 
   // Klasifikasi berdasarkan Meeus p.383
   if (gam <= 0.9972 && u < 0) {

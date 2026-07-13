@@ -82,7 +82,7 @@ function tickAstroClock() {
 
   // Iluminasi Bulan (approx)
   const elong = acos(sin(sun.Dec)*sin(moon.Dec) + cos(sun.Dec)*cos(moon.Dec)*cos(sun.RA - moon.RA));
-  const illum = (1 + cos(elong)) / 2 * 100;
+  const illum = (1 - cos(elong)) / 2 * 100;
 
   // 2. Update Matahari
   document.getElementById('acSunRA').textContent = fmtAngleToTime(sun.RA);

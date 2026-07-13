@@ -28,43 +28,38 @@
         throw new Error('Modul prayer.js belum dimuat.');
       }
 
-      // Hitung jadwal sholat (wasathi dasar)
+      // Simpan ALGO & IHTIYAT global agar prayerTimes() menggunakannya
+      const prevAlgo = (typeof ALGO !== 'undefined') ? ALGO : 'jeanmeeus';
+      const prevIhtiyat = (typeof IHTIYAT !== 'undefined') ? IHTIYAT : 2;
+      if (typeof window !== 'undefined') { window.ALGO = algo; window.IHTIYAT = ihtiyat; }
+
       const res = prayerTimes(year, month, day, lat, lng, tz, elev);
-      
-      // Jika menggunakan algoritma salaf Irsyadul Murid
-      let finalTimes = { ...res };
-      if (algo === 'irsyadulmurid' && typeof calcSalafPrayerTimes === 'function') {
-        const salaf = calcSalafPrayerTimes(year, month, day, lat, lng, tz);
-        finalTimes = { ...finalTimes, ...salaf };
-      }
 
-      // Tambahkan ihtiyat (kehati-hatian) dalam format string HH:MM
-      const timesWithIhtiyat = {};
-      const keys = ['imsak', 'subuh', 'terbit', 'dhuha', 'dzuhur', 'ashar', 'maghrib', 'isya'];
-      
-      keys.forEach(k => {
-        let minutesShift = ihtiyat;
-        if (k === 'terbit') minutesShift = -ihtiyat; // Terbit dikurangi ihtiyat agar lebih cepat aman
-        
-        const rawTime = finalTimes[k + 'Raw'];
-        if (typeof rawTime === 'number') {
-          // Konversi raw time ke jam dan menit
-          let h = Math.floor(rawTime);
-          let m = Math.round((rawTime - h) * 60) + minutesShift;
-          if (m >= 60) { h += Math.floor(m / 60); m = m % 60; }
-          if (m < 0) { h -= 1; m = 60 + m; }
-          timesWithIhtiyat[k] = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-          timesWithIhtiyat[k + 'Raw'] = rawTime + (minutesShift / 60);
-        }
-      });
+      // Kembalikan ke nilai sebelumnya
+      if (typeof window !== 'undefined') { window.ALGO = prevAlgo; window.IHTIYAT = prevIhtiyat; }
 
+      // prayerTimes() mengembalikan: { imsak, fajr, syuruq, dhuha, dhuhr, ashr, maghrib, isya, noonRaw, dec, eqt }
       return {
         meta: {
           tanggal: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
           koordinat: { lat, lng, elev, tz },
           konfigurasi: { algo, ihtiyat }
         },
-        jadwal: timesWithIhtiyat
+        jadwal: {
+          imsak:   res.imsak,
+          subuh:   res.fajr,
+          syuruq:  res.syuruq,
+          dhuha:   res.dhuha,
+          dzuhur:  res.dhuhr,
+          ashar:   res.ashr,
+          maghrib: res.maghrib,
+          isya:    res.isya
+        },
+        data: {
+          deklinasi:    res.dec,
+          equationTime: res.eqt,
+          kulminasi:    res.noonRaw
+        }
       };
     },
 
@@ -85,7 +80,7 @@
       }
 
       const p = prayerTimes(year, month, day, lat, lng, tz, elev);
-      const noonRaw = p.dzuhurRaw; // kulminasi dalam jam Wasathi (Lokal)
+      const noonRaw = p.noonRaw; // kulminasi dalam jam Wasathi (Lokal)
       
       // Rumus baru v3.0.1: offset = 12 - noonRaw
       const offsetHours = 12 - noonRaw;
@@ -125,7 +120,7 @@
         throw new Error('Modul hilal.js belum dimuat.');
       }
 
-      const result = calcHilal(hMonth, hYear, lat, lng, tz, elev);
+      const result = calcHilal(hYear, hMonth, lat, lng, elev, tz);
       
       return {
         meta: {
@@ -142,13 +137,14 @@
      * Mengambil perkiraan gerhana Matahari & Bulan terdekat
      */
     getEclipse: function(params = {}) {
-      if (typeof searchEclipseNear !== 'function') {
+      if (typeof nextSolarEclipse !== 'function' || typeof nextLunarEclipse !== 'function') {
         throw new Error('Modul eclipse.js belum dimuat.');
       }
       
       const year = params.year || new Date().getFullYear();
-      const solar = searchEclipseNear(year, 'sun');
-      const lunar = searchEclipseNear(year, 'moon');
+      const month = params.month || (new Date().getMonth() + 1);
+      const solar = nextSolarEclipse(year, month);
+      const lunar = nextLunarEclipse(year, month);
 
       return {
         solarNear: solar,
@@ -184,10 +180,10 @@
 
       // Sun & Moon Positions
       const sun = sunPos(jdE);
-      const sunH = toHoriz(sun.ra, sun.dec, jD, lat, lng);
+      const sunH = toHoriz(sun.RA, sun.Dec, lat, lng, jD);
       
       const moon = moonPos(jdE);
-      const moonH = toHoriz(moon.ra, moon.dec, jD, lat, lng);
+      const moonH = toHoriz(moon.RA, moon.Dec, lat, lng, jD);
 
       return {
         timestamp: now.toISOString(),
@@ -196,14 +192,14 @@
         greenwichSiderealTime: formatHms(gstHours),
         localSiderealTime: formatHms(lstHours),
         sunPosition: {
-          rightAscension: sun.ra,
-          declination: sun.dec,
+          rightAscension: sun.RA,
+          declination: sun.Dec,
           azimuth: sunH.az,
           altitude: sunH.alt
         },
         moonPosition: {
-          rightAscension: moon.ra,
-          declination: moon.dec,
+          rightAscension: moon.RA,
+          declination: moon.Dec,
           azimuth: moonH.az,
           altitude: moonH.alt
         }
