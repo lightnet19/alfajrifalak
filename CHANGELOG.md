@@ -6,9 +6,29 @@ Format ini didasarkan pada [Keep a Changelog](https://keepachangelog.com/id/1.0.
 
 ---
 
-## [3.0.3-patch1] - 2026-07-13
+## [3.1.0] - 2026-07-13
 ### Added
-- Dokumen formal `CHANGELOG.md` dan `version.txt` pada direktori root untuk standarisasi versi rilis.
+- **Kompas Kiblat Live**: Kompas menggunakan Web DeviceOrientation API, jarum berputar real-time mengikuti arah perangkat.
+- **Canvas Compass**: Kompas digambar ulang menggunakan Canvas 2D API dengan 10 layer (background, tick marks, cardinal labels, jarum, Ka'bah icon, center dot, live ring).
+- **Animasi Smooth**: Low-pass exponential filter + requestAnimationFrame untuk pergerakan mulus tanpa jitter.
+- **Status Live Badge**: Indikator ● LIVE (hijau berkedip) / ○ Statis (abu) / ✕ Ditolak.
+- **iOS Support**: Tombol "Aktifkan Kompas Live" untuk handle izin iOS 13+ (DeviceOrientationEvent.requestPermission).
+- **Azimuth dari Selatan**: Metode pesantren salaf untuk membaca arah kiblat dari Selatan.
+- **Rashdul Qiblah**: Kalkulasi waktu bayangan searah kiblat harian (otomatis setiap hari) dan tahunan (27-28 Mei & 15-16 Juli).
+- **Data Kompas**: Azimuth dari Utara, arah 16 mata angin, jarak ke Makkah, koordinat selisih lintang/bujur.
+- **Info Ka'bah**: Koordinat Ka'bah presisi, koordinat markaz, beda lintang dan bujur.
+
+---
+
+## [3.0.3] - 2026-07-13
+### Fixed
+- **Sinkronisasi Kalender Hijriyah (`math.js`):** Memperbaiki bug pada fungsi `jdToHijri` di mana tahun kabisat (`jv`) dalam siklus 30 tahun terhitung salah (sehingga kalender tertinggal satu bulan penuh pada tanggal tertentu). Menulis ulang formula konversi `jdToHijri` agar menggunakan fungsi invers matematis yang presisi terhadap `hijriToJD`.
+- **Koreksi Tahun Kabisat:** Memperbaiki fungsi `isHLeap` agar menggunakan tahun kabisat ke-16 (bukan ke-15) agar sesuai dengan algoritma standar Kuwaiti/Meeus.
+
+---
+
+## [3.0.2-patch1] - 2026-07-13
+### Added
 - Laporan audit sistem komprehensif (`audit_report.md`) berisi tinjauan detail dan evaluasi akurasi perhitungan.
 
 ### Fixed
@@ -20,11 +40,11 @@ Format ini didasarkan pada [Keep a Changelog](https://keepachangelog.com/id/1.0.
   - Memperbaiki properti kulminasi dari `p.dzuhurRaw` menjadi `p.noonRaw`.
   - Merefaktor pemetaan jadwal sholat yang sebelumnya menggunakan key `*Raw` yang tidak eksis menjadi pembacaan langsung dari string waktu terformat.
 - **Dead Code Modul Gerhana:** Pembersihan variabel sisa pengembangan (`absGam`, `u2`, `gamma`, dan `gammaAbs`) pada file `eclipse.js`.
-- **Konsistensi Teks UI:** Sinkronisasi string versi rilis pada footer `index.html` dan header laporan hilal `hilal.js` ke `v3.0.3`.
+- **Konsistensi Teks UI:** Sinkronisasi string versi rilis pada footer `index.html` dan header laporan hilal `hilal.js` ke `v3.0.2` (Maintenance / Patch 1).
 
 ---
 
-## [3.0.3] - 2026-07-09
+## [3.0.2] - 2026-07-09
 ### Added
 - Fungsi inisialisasi default bulan/tahun Hijriyah di form hilal secara dinamis berdasarkan tanggal hari ini (`_initHilalDefaults()`).
 
@@ -98,19 +118,3 @@ Format ini didasarkan pada [Keep a Changelog](https://keepachangelog.com/id/1.0.
 - **Koreksi Tanggal Hijriyah (Hijri Offset):** Menambahkan input dinamis "Koreksi H" untuk sinkronisasi hasil kalkulasi kalender aritmatika dengan rukyatul hilal riil.
 - **Konvensi Transisi Maghrib:** Penanggalan Hijriyah kini mendeteksi waktu terbenam matahari (Maghrib) setempat. Jika waktu saat ini telah melewati Maghrib, penanggalan Hijriyah otomatis maju satu hari ke malam berikutnya (disertai indikator malam aktif).
 - Lokalisasi pencarian GPS menggunakan nominatim reverse geocoding API.
-
-## [3.0.3] - 2026-07-13
-### Fixed
-- Fix `jdToHijri` leap year synchronization bug that caused Hijri calendar dates to display one month behind.
-
-## [3.1.0] - 2026-07-13
-### Added
-- **Kompas Kiblat Live**: Kompas menggunakan Web DeviceOrientation API, jarum berputar real-time mengikuti arah perangkat.
-- **Canvas Compass**: Kompas digambar ulang menggunakan Canvas 2D API dengan 10 layer (background, tick marks, cardinal labels, jarum, Ka'bah icon, center dot, live ring).
-- **Animasi Smooth**: Low-pass exponential filter + requestAnimationFrame untuk pergerakan mulus tanpa jitter.
-- **Status Live Badge**: Indikator ● LIVE (hijau berkedip) / ○ Statis (abu) / ✕ Ditolak.
-- **iOS Support**: Tombol "Aktifkan Kompas Live" untuk handle izin iOS 13+ (DeviceOrientationEvent.requestPermission).
-- **Azimuth dari Selatan**: Metode pesantren salaf untuk membaca arah kiblat dari Selatan.
-- **Rashdul Qiblah**: Kalkulasi waktu bayangan searah kiblat harian (otomatis setiap hari) dan tahunan (27-28 Mei & 15-16 Juli).
-- **Data Kompas**: Azimuth dari Utara, arah 16 mata angin, jarak ke Makkah, koordinat selisih lintang/bujur.
-- **Info Ka'bah**: Koordinat Ka'bah presisi, koordinat markaz, beda lintang dan bujur.
