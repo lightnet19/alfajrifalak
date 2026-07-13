@@ -122,6 +122,12 @@ window.addEventListener('message', (event) => {
 
 ---
 
-## 📄 Hak Cipta & Penggunaan
+## 📄 Hak Cipta, Kontribusi & Lisensi
 
-Dibuat secara profesional atas dedikasi dan permintaan resmi dari **Lembaga Falakiyah PCNU Kencong**. Semua formula hisab dan arsitektur visual dilindungi untuk mendukung dakwah islamiyah bidang ilmu falak di Indonesia.
+Dibuat secara profesional atas dedikasi dan permintaan resmi dari **Lembaga Falakiyah PCNU Kencong**. Semua formula hisab dan arsitektur visual dikembangkan untuk mendukung dakwah islamiyah bidang ilmu falak di Indonesia.
+
+### 🤝 Kontribusi
+Kami sangat menyambut kontribusi dari pengembang luar untuk perbaikan bug, optimasi kode, atau penambahan fitur baru. Silakan baca **[CONTRIBUTING.md](file:///c:/Projects/Al-Fajri%20Falak/CONTRIBUTING.md)** untuk panduan memulai kontribusi, standar gaya penulisan kode, serta pengujian lokal.
+
+### 📄 Lisensi
+Proyek ini dilisensikan di bawah **Lisensi MIT** — bebas digunakan, dimodifikasi, dan didistribusikan secara terbuka selama menyertakan hak cipta asli. Silakan baca file **[LICENSE](file:///c:/Projects/Al-Fajri%20Falak/LICENSE)** untuk ketentuan lisensi selengkapnya.
